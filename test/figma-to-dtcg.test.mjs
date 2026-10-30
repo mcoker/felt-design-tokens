@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { figmaVariablesToNativeExports } from '../src/figma-to-dtcg.mjs';
+import { readFile, readdir } from 'node:fs/promises';
+import path from 'node:path';
+import { fetchFigmaVariables, figmaVariablesToNativeExports } from '../src/figma-to-dtcg.mjs';
 
 test('writes native-style DTCG files per local collection mode', () => {
   const files = figmaVariablesToNativeExports({
@@ -98,8 +100,8 @@ test('preserves extended collection metadata and DTCG group root tokens', () => 
   });
 });
 
-test('keeps the first API variable when names collide', () => {
-  const [file] = figmaVariablesToNativeExports({
+test('rejects colliding API variable names with both variable IDs', () => {
+  assert.throws(() => figmaVariablesToNativeExports({
     meta: {
       variableCollections: {
         collection: {
@@ -113,10 +115,7 @@ test('keeps the first API variable when names collide', () => {
         second: { id: 'VariableID:second', key: 'z-key', name: 'felt/effect/size/55', variableCollectionId: 'collection', resolvedType: 'FLOAT', valuesByMode: { value: 2 } }
       }
     }
-  });
-
-  assert.equal(file.tokens.felt.effect.size['55'].$value, 1);
-  assert.equal(file.tokens.felt.effect.size['55'].$extensions['com.figma.variableId'], 'VariableID:first');
+  }), /Duplicate token path "felt\/effect\/size\/55".*VariableID:first and VariableID:second/);
 });
 
 test('does not sort variables to match Figma native export order', () => {
@@ -271,4 +270,137 @@ test('resolves composed colors using the selected extension mode and its overrid
   assert.deepEqual(file.tokens.felt.color.dependent.$value, {
     colorSpace: 'srgb', components: [0, 0, 0], alpha: Math.fround(0.15), hex: '#000000'
   });
+  assert.equal(file.tokens.felt.color.hover.$extensions['com.figma.composedColor'].opacityArg.alias.targetVariableName, 'felt/opacity/15');
+});
+
+test('exports inherited and locally created extension variables and multi-level overrides', () => {
+  const files = figmaVariablesToNativeExports({
+    variableCollections: {
+      base: { id: 'base', name: 'Base', variableIds: ['a'], modes: [{ modeId: 'light', name: 'Light' }] },
+      middle: { id: 'middle', name: 'Middle', parentVariableCollectionId: 'base', rootVariableCollectionId: 'base',
+        variableIds: ['a', 'b'], modes: [{ modeId: 'middle-light', name: 'Light', parentModeId: 'light' }],
+        variableOverrides: { a: { 'middle-light': 2 } } },
+      leaf: { id: 'leaf', name: 'Leaf', parentVariableCollectionId: 'middle', rootVariableCollectionId: 'base',
+        variableIds: ['a', 'b'], modes: [{ modeId: 'leaf-light', name: 'Light', parentModeId: 'middle-light' }] }
+    },
+    variables: {
+      a: { id: 'a', name: 'size/a', variableCollectionId: 'base', resolvedType: 'FLOAT', valuesByMode: { light: 1 } },
+      b: { id: 'b', name: 'size/b', variableCollectionId: 'middle', resolvedType: 'FLOAT', valuesByMode: { 'middle-light': 3 } }
+    }
+  });
+  const leaf = files.find((file) => file.collectionName === 'Leaf').tokens;
+  assert.equal(leaf.size.a.$value, 2);
+  assert.equal(leaf.size.a.$extensions['com.figma.isOverride'], true);
+  assert.equal(leaf.size.b.$value, 3);
+});
+
+test('rejects ambiguous cross-collection modes rather than using a default value', () => {
+  const response = {
+    variableCollections: {
+      source: { id: 'source', name: 'Source', modes: [{ modeId: 'dark', name: 'Dark' }] },
+      other: { id: 'other', name: 'Other', remote: true, defaultModeId: 'day',
+        modes: [{ modeId: 'day', name: 'Day' }, { modeId: 'night', name: 'Night' }] }
+    },
+    variables: {
+      a: { id: 'a', name: 'color/a', variableCollectionId: 'source', resolvedType: 'COLOR',
+        valuesByMode: { dark: { type: 'VARIABLE_ALIAS', id: 'b' } } },
+      b: { id: 'b', name: 'color/b', variableCollectionId: 'other', resolvedType: 'COLOR',
+        valuesByMode: { day: { r: 1, g: 0, b: 0 }, night: { r: 0, g: 0, b: 1 } } }
+    }
+  };
+  assert.throws(() => figmaVariablesToNativeExports(response), /Cannot select a mode for alias "b"/);
+});
+
+test('exports dimensions and DTCG cubicBezier arrays without changing unitless floats', () => {
+  const [file] = figmaVariablesToNativeExports({
+    variableCollections: { a: { id: 'a', name: 'Tokens', modes: [{ modeId: 'one', name: 'One' }] } },
+    variables: {
+      radius: { id: 'radius', name: 'radius', variableCollectionId: 'a', resolvedType: 'FLOAT',
+        scopes: ['CORNER_RADIUS'], valuesByMode: { one: 4 } },
+      opacity: { id: 'opacity', name: 'opacity', variableCollectionId: 'a', resolvedType: 'FLOAT',
+        scopes: ['COLOR_OPACITY'], valuesByMode: { one: 25 } },
+      easing: { id: 'easing', name: 'easing', variableCollectionId: 'a', resolvedType: 'EASING',
+        valuesByMode: { one: { bezierValues: { p1x: 0.4, p1y: 0, p2x: 0.2, p2y: 1 } } } }
+    }
+  });
+  assert.deepEqual([file.tokens.radius.$type, file.tokens.radius.$value], ['dimension', { value: 4, unit: 'px' }]);
+  assert.deepEqual([file.tokens.opacity.$type, file.tokens.opacity.$value], ['number', 25]);
+  assert.deepEqual([file.tokens.easing.$type, file.tokens.easing.$value], ['cubicBezier', [0.4, 0, 0.2, 1]]);
+});
+
+test('recognizes this design system’s duration and easing families in REST primitive types', () => {
+  const [file] = figmaVariablesToNativeExports({
+    variableCollections: { a: { id: 'a', name: 'Primitives', modes: [{ modeId: 'value', name: 'Value' }] } },
+    variables: {
+      duration: { id: 'duration', name: 'felt/duration/10', variableCollectionId: 'a', resolvedType: 'FLOAT',
+        valuesByMode: { value: 0.1 } },
+      easing: { id: 'easing', name: 'felt/easing/10', variableCollectionId: 'a', resolvedType: 'STRING',
+        valuesByMode: { value: 'cubic-bezier(0.4, 0, 0.2, 1)' } }
+    }
+  });
+  assert.deepEqual(file.tokens.felt.duration['10'].$value, { value: 100, unit: 'ms' });
+  assert.deepEqual(file.tokens.felt.easing['10'].$value, [0.4, 0, 0.2, 1]);
+  assert.equal(file.tokens.felt.easing['10'].$type, 'cubicBezier');
+});
+
+test('rejects invalid token paths', () => {
+  const response = { variableCollections: { a: { id: 'a', name: 'A', modes: [{ modeId: 'm', name: 'M' }] } },
+    variables: { one: { id: 'one', name: 'group/bad.name', variableCollectionId: 'a', resolvedType: 'FLOAT', valuesByMode: { m: 1 } } } };
+  assert.throws(() => figmaVariablesToNativeExports(response), /Invalid DTCG token path/);
+  response.variables.one.name = 'group/__proto__';
+  assert.throws(() => figmaVariablesToNativeExports(response), /Invalid DTCG token path/);
+});
+
+test('retries rate limits but not permanent errors, with the appropriate authentication header', async () => {
+  const calls = [];
+  const request = async (url, options) => {
+    calls.push({ url, options });
+    return calls.length === 1
+      ? { ok: false, status: 429, headers: { get: () => '0' } }
+      : { ok: true, json: async () => ({ meta: { variables: {} } }) };
+  };
+  assert.deepEqual(await fetchFigmaVariables({ fileKey: 'file key', token: 'secret', tokenType: 'oauth', request }),
+    { meta: { variables: {} } });
+  assert.equal(calls.length, 2);
+  assert.match(calls[0].url, /file%20key\/variables\/local$/);
+  assert.deepEqual(calls[0].options.headers, { Authorization: 'Bearer secret' });
+  assert.ok(calls[0].options.signal instanceof AbortSignal);
+  await assert.rejects(() => fetchFigmaVariables({ fileKey: 'key', token: 'secret', retries: 0,
+    request: async () => ({ ok: false, status: 403, text: async () => 'Invalid scope' }) }),
+  /Figma API request failed \(403\): Invalid scope/);
+});
+
+test('checked-in token files have valid easing and dimension shapes and retain composed aliases', async () => {
+  const root = path.resolve('tokens/figma');
+  async function inspect(directory) {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const file = path.join(directory, entry.name);
+      if (entry.isDirectory()) await inspect(file);
+      else if (entry.name.endsWith('.tokens.json')) {
+        const data = JSON.parse(await readFile(file, 'utf8'));
+        function walk(node) {
+          for (const [key, value] of Object.entries(node)) {
+            if (key.startsWith('$') && key !== '$root') continue;
+            if (value && typeof value === 'object' && '$value' in value) {
+              if (value.$type === 'cubicBezier') {
+                assert.equal(value.$value.length, 4, file);
+                assert.ok(value.$value.every(Number.isFinite), file);
+              }
+              if (value.$type === 'dimension' && typeof value.$value !== 'string') {
+                assert.equal(value.$value.unit, 'px', file);
+                assert.equal(typeof value.$value.value, 'number', file);
+              }
+            } else if (value && typeof value === 'object') walk(value);
+          }
+        }
+        walk(data);
+      }
+    }
+  }
+  await inspect(root);
+  const glass = JSON.parse(await readFile(path.join(root, 'Glass colors/Dark.tokens.json'), 'utf8'));
+  const hover = glass.felt.color.fill.interactive.subtle.hover;
+  assert.equal(hover.$value.alpha, Math.fround(0.15));
+  assert.equal(hover.$extensions['com.figma.composedColor'].opacityArg.alias.targetVariableName, 'felt/opacity/15');
+  assert.equal(hover.$extensions['com.figma.composedColor'].colorArg.alias.targetVariableName, 'felt/color/gray/30');
 });

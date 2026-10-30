@@ -6,22 +6,46 @@ const TYPE_MAP = {
   FLOAT: 'number',
   STRING: 'string',
   TIMING: 'duration',
-  EASING: 'easing'
+  EASING: 'cubicBezier'
 };
 
-export async function fetchFigmaVariables({ fileKey, token, tokenType = 'personal' }) {
+const LENGTH_SCOPES = new Set([
+  'CORNER_RADIUS', 'GAP', 'STROKE_FLOAT', 'WIDTH_HEIGHT', 'FONT_SIZE',
+  'EFFECT_FLOAT', 'LETTER_SPACING', 'PARAGRAPH_SPACING', 'PARAGRAPH_INDENT'
+]);
+
+export async function fetchFigmaVariables({ fileKey, token, tokenType = 'personal', request = fetch, retries = 2, timeoutMs = 15000 }) {
   if (!fileKey) throw new Error('A Figma file key is required.');
   if (!token) throw new Error('A Figma token is required.');
 
   const headers = tokenType === 'oauth'
     ? { Authorization: `Bearer ${token}` }
     : { 'X-Figma-Token': token };
-  const response = await fetch(`${FIGMA_API}/files/${encodeURIComponent(fileKey)}/variables/local`, { headers });
-  if (!response.ok) {
+  for (let attempt = 0; ; attempt += 1) {
+    let response;
+    try {
+      response = await request(`${FIGMA_API}/files/${encodeURIComponent(fileKey)}/variables/local`, {
+        headers,
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+    } catch (error) {
+      if (attempt >= retries || error.name === 'TimeoutError' || error.name === 'AbortError') throw error;
+      await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt));
+      continue;
+    }
+    if (response.ok) return response.json();
+    if (attempt < retries && (response.status === 429 || response.status >= 500)) {
+      const retryAfter = response.headers?.get('retry-after');
+      const seconds = retryAfter === null || retryAfter === undefined ? NaN : Number(retryAfter);
+      const date = retryAfter && !Number.isFinite(seconds) ? Date.parse(retryAfter) : NaN;
+      const delay = Number.isFinite(seconds) ? seconds * 1000
+        : Number.isFinite(date) ? Math.max(0, date - Date.now()) : 500 * 2 ** attempt;
+      await new Promise((resolve) => setTimeout(resolve, Math.min(Math.max(0, delay), 30000)));
+      continue;
+    }
     const detail = await response.text();
     throw new Error(`Figma API request failed (${response.status}): ${detail}`);
   }
-  return response.json();
 }
 
 /**
@@ -43,16 +67,17 @@ export function figmaVariablesToNativeExports(response, { mode } = {}) {
   for (const collection of Object.values(collections)) {
     if (collection.remote || collection.name === 'Figma-only') continue;
 
-    const baseCollection = collections[collection.baseCollectionId] ?? collection;
-    const collectionVariables = variables.filter(
-      (variable) => variable.variableCollectionId === baseCollection.id && !variable.deletedButReferenced
-    );
+    const baseCollection = collectionRoot(collection, collections);
+    const collectionIds = collection.variableIds && new Set(collection.variableIds);
+    const collectionVariables = variables.filter((variable) => !variable.deletedButReferenced && (
+      collectionIds ? collectionIds.has(variable.id) : variable.variableCollectionId === baseCollection.id
+    ));
     const exportedIds = new Set(collectionVariables.map((variable) => variable.id));
     const modes = collection.modes ?? [];
 
     for (const selectedMode of modes) {
       if (mode && selectedMode.name !== mode && selectedMode.modeId !== mode) continue;
-      const baseModeId = selectedMode.parentModeId ?? selectedMode.modeId;
+      const baseModeId = rootModeId(collection, selectedMode, collections);
       const baseMode = baseCollection.modes?.find((item) => item.modeId === baseModeId);
       const context = {
         collection,
@@ -65,11 +90,7 @@ export function figmaVariablesToNativeExports(response, { mode } = {}) {
       const referenceTokens = new Set();
 
       for (const variable of collectionVariables) {
-        const overrideModes = collection.variableOverrides?.[variable.id];
-        const isOverride = overrideModes && Object.hasOwn(overrideModes, selectedMode.modeId);
-        const rawValue = isOverride
-          ? overrideModes[selectedMode.modeId]
-          : variable.valuesByMode?.[baseModeId] ?? variable.valuesByMode?.[selectedMode.modeId];
+        const { value: rawValue, isOverride } = modeValue(variable, context, collections);
         if (rawValue === undefined) {
           throw new Error(`Missing value for "${variable.name}" in "${collection.name}/${selectedMode.name}".`);
         }
@@ -79,14 +100,14 @@ export function figmaVariablesToNativeExports(response, { mode } = {}) {
         const token = createNativeToken(variable, rawValue, context, {
           variablesById,
           collections,
-          isOverride: Boolean(isOverride),
+          isOverride,
           baseCollectionId: baseCollection.id,
           exportedIds
         });
         if (isVariableAlias(rawValue) && exportedIds.has(variablesById.get(rawValue.id)?.id)) {
           referenceTokens.add(token);
         }
-        setNativePath(tokenTree, variable.name.split('/').filter(Boolean), token);
+        setNativePath(tokenTree, variable.name.split('/'), token, variable.id, collection.name, selectedMode.name);
       }
 
       validateNativeReferences(tokenTree, referenceTokens, collection.name, selectedMode.name);
@@ -118,14 +139,14 @@ export function figmaVariablesToNativeExports(response, { mode } = {}) {
 }
 
 function createNativeToken(variable, rawValue, context, resolution) {
-  const type = TYPE_MAP[resolvedType(variable)];
+  const type = tokenType(variable);
   if (!type) throw new Error(`Unsupported Figma variable type "${resolvedType(variable)}" for "${variable.name}".`);
   const extensions = { 'com.figma.variableId': variable.id };
   if (variable.hiddenFromPublishing) extensions['com.figma.hiddenFromPublishing'] = true;
   if (variable.scopes?.length) {
     extensions['com.figma.scopes'] = variable.scopes.map((scope) => scope === 'STROKE_COLOR' ? 'STROKE' : scope);
   }
-  if (resolvedType(variable) === 'STRING') extensions['com.figma.type'] = 'string';
+  if (type === 'string') extensions['com.figma.type'] = 'string';
 
   let value;
   if (isComposedColor(rawValue)) {
@@ -148,7 +169,7 @@ function createNativeToken(variable, rawValue, context, resolution) {
     value = formatNativeValue(type, rawValue);
   }
 
-  if (context.collection.variableOverrides?.[variable.id]?.[context.mode.modeId] !== undefined) {
+  if (resolution.isOverride) {
     extensions['com.figma.isOverride'] = true;
   }
 
@@ -224,16 +245,22 @@ function resolveAliasValue(variableId, context, resolution, seen = new Set()) {
   const targetCollection = resolution.collections[target.variableCollectionId];
   if (!targetCollection) return undefined;
   const targetMode = selectAliasMode(targetCollection, context);
-  const override = targetCollection.id === context.baseCollection.id
-    ? context.collection.variableOverrides?.[target.id]
-    : undefined;
-  const value = override && Object.hasOwn(override, context.mode.modeId)
-    ? override[context.mode.modeId]
-    : target.valuesByMode?.[targetMode?.modeId];
-  if (isVariableAlias(value)) return resolveAliasValue(value.id, { ...context, baseModeName: targetMode.name }, resolution, seen);
+  if (!targetMode) {
+    throw new Error(`Cannot select a mode for alias "${variableId}" in collection "${targetCollection.name}" from "${context.collection.name}/${context.mode.name}".`);
+  }
+  const inCurrentTree = targetCollection.id === context.baseCollection.id;
+  const targetContext = inCurrentTree ? context : {
+    collection: targetCollection,
+    baseCollection: targetCollection,
+    mode: targetMode,
+    baseModeId: targetMode.modeId,
+    baseModeName: targetMode.name
+  };
+  const { value } = modeValue(target, targetContext, resolution.collections);
+  if (isVariableAlias(value)) return resolveAliasValue(value.id, targetContext, resolution, seen);
   if (isComposedColor(value)) {
     return isVariableAlias(value.color)
-      ? resolveAliasValue(value.color.id, { ...context, baseModeName: targetMode.name }, resolution, seen)
+      ? resolveAliasValue(value.color.id, targetContext, resolution, seen)
       : value.color;
   }
   return value;
@@ -243,14 +270,34 @@ function selectAliasMode(collection, context) {
   const modes = collection.modes ?? [];
   if (collection.id === context.baseCollection.id) {
     return modes.find((item) => item.modeId === context.baseModeId)
-      ?? modes.find((item) => item.name === context.baseModeName)
-      ?? modes.find((item) => item.modeId === collection.defaultModeId)
-      ?? modes[0];
+      ?? modes.find((item) => item.name === context.baseModeName);
   }
   return modes.find((item) => item.name === context.baseModeName)
-    ?? (modes.length === 1 ? modes[0] : undefined)
-    ?? modes.find((item) => item.modeId === collection.defaultModeId)
-    ?? modes[0];
+    ?? (modes.length === 1 ? modes[0] : undefined);
+}
+
+function modeValue(variable, context, collections) {
+  let current = context.collection;
+  let mode = context.mode;
+  const seen = new Set();
+  while (current) {
+    if (seen.has(current.id)) throw new Error(`Circular collection extension at "${current.name}".`);
+    seen.add(current.id);
+    const overrides = current.variableOverrides?.[variable.id];
+    if (overrides && Object.hasOwn(overrides, mode.modeId)) {
+      return { value: overrides[mode.modeId], isOverride: true };
+    }
+    if (current.id === variable.variableCollectionId) {
+      return { value: variable.valuesByMode?.[mode.modeId], isOverride: false };
+    }
+    if (!current.parentVariableCollectionId) break;
+    const parent = collections[current.parentVariableCollectionId];
+    if (!parent) throw new Error(`Missing parent collection for "${context.collection.name}".`);
+    mode = parent.modes?.find((item) => item.modeId === mode.parentModeId);
+    if (!mode) throw new Error(`Missing parent mode for "${context.collection.name}/${context.mode.name}".`);
+    current = parent;
+  }
+  return { value: variable.valuesByMode?.[context.baseModeId], isOverride: false };
 }
 
 function formatNativeValue(type, value) {
@@ -266,19 +313,27 @@ function formatNativeValue(type, value) {
   if (type === 'duration' && typeof value === 'number') {
     return { value: Number((value * 1000).toFixed(5)), unit: 'ms' };
   }
-  if (type === 'easing' && value?.bezierValues) {
-    const { p1x, p1y, p2x, p2y } = value.bezierValues;
-    const number = (part) => Number(part.toFixed(6)).toString();
-    return `cubic-bezier(${[p1x, p1y, p2x, p2y].map(number).join(', ')})`;
+  if (type === 'dimension' && typeof value === 'number') return { value, unit: 'px' };
+  if (type === 'cubicBezier') {
+    const bezier = value?.bezierValues;
+    const points = bezier ? [bezier.p1x, bezier.p1y, bezier.p2x, bezier.p2y]
+      : typeof value === 'string' && /^cubic-bezier\(([^)]+)\)$/.exec(value)?.[1].split(',').map(Number);
+    if (!points || points.length !== 4 || points.some((part) => !Number.isFinite(part))
+      || points[0] < 0 || points[0] > 1 || points[2] < 0 || points[2] > 1) {
+      throw new Error(`Invalid cubic Bézier value: ${JSON.stringify(value)}.`);
+    }
+    return points.map((part) => Number(part.toFixed(6)));
   }
   return value;
 }
 
-function setNativePath(root, segments, value) {
-  if (!segments.length) return;
+function setNativePath(root, segments, value, variableId, collectionName, modeName) {
+  if (segments.some((segment) => !segment || segment.startsWith('$') || /[{}.]/.test(segment) || segment === '__proto__' || segment === 'constructor' || segment === 'prototype')) {
+    throw new Error(`Invalid DTCG token path "${segments.join('/')}" for ${variableId} in "${collectionName}/${modeName}".`);
+  }
   let current = root;
   for (const segment of segments.slice(0, -1)) {
-    if (!current[segment]) {
+    if (!Object.hasOwn(current, segment)) {
       current[segment] = {};
     } else if (typeof current[segment] !== 'object' || '$type' in current[segment]) {
       current[segment] = { $root: current[segment] };
@@ -289,6 +344,10 @@ function setNativePath(root, segments, value) {
   if (current[leaf] !== undefined) {
     if (typeof current[leaf] === 'object' && !('$type' in current[leaf]) && current[leaf].$root === undefined) {
       current[leaf].$root = value;
+    } else {
+      const existing = current[leaf].$extensions?.['com.figma.variableId']
+        ?? current[leaf].$root?.$extensions?.['com.figma.variableId'];
+      throw new Error(`Duplicate token path "${segments.join('/')}" in "${collectionName}/${modeName}": ${existing} and ${variableId}.`);
     }
     return;
   }
@@ -328,4 +387,48 @@ function validateNativeReferences(root, referenceTokens, collectionName, modeNam
 
 function resolvedType(variable) {
   return variable.resolvedType ?? variable.type;
+}
+
+function isLength(variable) {
+  return variable.scopes?.some((scope) => LENGTH_SCOPES.has(scope))
+    || (variable.scopes?.includes('LINE_HEIGHT') && variable.name.includes('/figma-only/'));
+}
+
+function tokenType(variable) {
+  const figmaType = resolvedType(variable);
+  // REST documents only four primitive types; these named families carry richer semantics.
+  if (figmaType === 'FLOAT' && /^felt\/(?:motion\/)?duration\//.test(variable.name)) return 'duration';
+  if (figmaType === 'STRING' && /^felt\/(?:motion\/)?easing\//.test(variable.name)) return 'cubicBezier';
+  if (figmaType === 'FLOAT' && isLength(variable)) return 'dimension';
+  return TYPE_MAP[figmaType];
+}
+
+function collectionRoot(collection, collections) {
+  const root = collections[collection.rootVariableCollectionId ?? collection.baseCollectionId];
+  if (root) return root;
+  let current = collection;
+  const seen = new Set();
+  while (current.parentVariableCollectionId) {
+    if (seen.has(current.id)) throw new Error(`Circular collection extension at "${current.name}".`);
+    seen.add(current.id);
+    current = collections[current.parentVariableCollectionId];
+    if (!current) throw new Error(`Missing parent collection for "${collection.name}".`);
+  }
+  return current;
+}
+
+function rootModeId(collection, mode, collections) {
+  let current = collection;
+  let selected = mode;
+  const seen = new Set();
+  while (current.parentVariableCollectionId) {
+    if (seen.has(current.id)) throw new Error(`Circular collection extension at "${current.name}".`);
+    seen.add(current.id);
+    const parent = collections[current.parentVariableCollectionId];
+    if (!parent) throw new Error(`Missing parent collection for "${collection.name}".`);
+    selected = parent.modes?.find((item) => item.modeId === selected.parentModeId);
+    if (!selected) throw new Error(`Missing parent mode for "${collection.name}/${mode.name}".`);
+    current = parent;
+  }
+  return selected.modeId;
 }

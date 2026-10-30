@@ -3,8 +3,11 @@
     "space": {
       "fluid": {
         "xxs": {
-          "$type": "number",
-          "$value": 4,
+          "$type": "dimension",
+          "$value": {
+            "value": 4,
+            "unit": "px"
+          },
           "$description": "Use to set extra-extra small padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:324",
@@ -20,8 +23,11 @@
           }
         },
         "xs": {
-          "$type": "number",
-          "$value": 8,
+          "$type": "dimension",
+          "$value": {
+            "value": 8,
+            "unit": "px"
+          },
           "$description": "Use to set extra small padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:325",
@@ -37,8 +43,11 @@
           }
         },
         "sm": {
-          "$type": "number",
-          "$value": 12,
+          "$type": "dimension",
+          "$value": {
+            "value": 12,
+            "unit": "px"
+          },
           "$description": "Use to set small padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:326",
@@ -54,8 +63,11 @@
           }
         },
         "md": {
-          "$type": "number",
-          "$value": 24,
+          "$type": "dimension",
+          "$value": {
+            "value": 24,
+            "unit": "px"
+          },
           "$description": "Use to set medium padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:327",
@@ -71,8 +83,11 @@
           }
         },
         "lg": {
-          "$type": "number",
-          "$value": 32,
+          "$type": "dimension",
+          "$value": {
+            "value": 32,
+            "unit": "px"
+          },
           "$description": "Use to set large padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:328",
@@ -88,8 +103,11 @@
           }
         },
         "xl": {
-          "$type": "number",
-          "$value": 48,
+          "$type": "dimension",
+          "$value": {
+            "value": 48,
+            "unit": "px"
+          },
           "$description": "Use to set extra large padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:329",
@@ -105,8 +123,11 @@
           }
         },
         "xxl": {
-          "$type": "number",
-          "$value": 64,
+          "$type": "dimension",
+          "$value": {
+            "value": 64,
+            "unit": "px"
+          },
           "$description": "Use to set extra large padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:3258:279",
@@ -124,8 +145,11 @@
       },
       "fixed": {
         "xxs": {
-          "$type": "number",
-          "$value": 2,
+          "$type": "dimension",
+          "$value": {
+            "value": 2,
+            "unit": "px"
+          },
           "$description": "Use to set extra-extra small padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:3258:272",
@@ -141,8 +165,11 @@
           }
         },
         "xs": {
-          "$type": "number",
-          "$value": 4,
+          "$type": "dimension",
+          "$value": {
+            "value": 4,
+            "unit": "px"
+          },
           "$description": "Use to set extra small padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:3258:273",
@@ -158,8 +185,11 @@
           }
         },
         "sm": {
-          "$type": "number",
-          "$value": 8,
+          "$type": "dimension",
+          "$value": {
+            "value": 8,
+            "unit": "px"
+          },
           "$description": "Use to set small padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:3258:274",
@@ -175,8 +205,11 @@
           }
         },
         "md": {
-          "$type": "number",
-          "$value": 16,
+          "$type": "dimension",
+          "$value": {
+            "value": 16,
+            "unit": "px"
+          },
           "$description": "Use to set medium padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:3258:275",
@@ -192,8 +225,11 @@
           }
         },
         "lg": {
-          "$type": "number",
-          "$value": 24,
+          "$type": "dimension",
+          "$value": {
+            "value": 24,
+            "unit": "px"
+          },
           "$description": "Use to set large padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:3258:276",
@@ -209,8 +245,11 @@
           }
         },
         "xl": {
-          "$type": "number",
-          "$value": 32,
+          "$type": "dimension",
+          "$value": {
+            "value": 32,
+            "unit": "px"
+          },
           "$description": "Use to set extra large padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:3258:277",
@@ -226,8 +265,11 @@
           }
         },
         "xxl": {
-          "$type": "number",
-          "$value": 48,
+          "$type": "dimension",
+          "$value": {
+            "value": 48,
+            "unit": "px"
+          },
           "$description": "Use to set extra large padding within elements or spacing between elements. Always check to see if a more specific space token exists (e.g., space.gap.* or space.interactive.*) before applying this generic space token.",
           "$extensions": {
             "com.figma.variableId": "VariableID:3258:278",
@@ -245,8 +287,11 @@
       },
       "gap": {
         "text-to-element": {
-          "$type": "number",
-          "$value": 8,
+          "$type": "dimension",
+          "$value": {
+            "value": 8,
+            "unit": "px"
+          },
           "$description": "Use to set the inline (horizontal) gap between text and adjacent elements such as avatars, icons, and badges. Do not use for vertical (block) spacing. Do not use as generic padding between unrelated layout regions; use space.xxs through space.xl if no purpose-specific gap token applies (space.gap.*, space.interactive.*).",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:330",
@@ -262,8 +307,11 @@
           }
         },
         "interactive-to-interactive": {
-          "$type": "number",
-          "$value": 24,
+          "$type": "dimension",
+          "$value": {
+            "value": 24,
+            "unit": "px"
+          },
           "$description": "Use to set the gap between two interactive elements, such as buttons in an action group. Do not use for padding inside a single control; use space.interactive.* instead.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:331",
@@ -281,7 +329,7 @@
       },
       "interactive": {
         "vertical": {
-          "$type": "number",
+          "$type": "dimension",
           "$value": "{felt.space.fluid.sm}",
           "$description": "Use to set the vertical (block) padding for all interactive elements, including both controls and actions, so their heights stay consistent. Do not use for horizontal padding; use space.interactive.horizontal.* instead.",
           "$extensions": {
@@ -293,7 +341,7 @@
         },
         "horizontal": {
           "action": {
-            "$type": "number",
+            "$type": "dimension",
             "$value": "{felt.space.fluid.lg}",
             "$description": "Use to set the horizontal (inline) padding for interactive action elements such as buttons and CTAs. Do not use for form controls; use space.interactive.horizontal.control. Do not use for subtle items such as tabs; use space.interactive.horizontal.subtle.",
             "$extensions": {
@@ -304,7 +352,7 @@
             }
           },
           "control": {
-            "$type": "number",
+            "$type": "dimension",
             "$value": "{felt.space.fluid.md}",
             "$description": "Use to set the horizontal (inline) padding for interactive control elements such as input fields and select menu toggles. Typically paired with color.fill.interactive.control.*. Do not use for buttons or CTAs; use space.interactive.horizontal.action.",
             "$extensions": {
@@ -315,7 +363,7 @@
             }
           },
           "subtle": {
-            "$type": "number",
+            "$type": "dimension",
             "$value": "{felt.space.fluid.sm}",
             "$description": "Use to set the horizontal (inline) padding for subtle interactive elements such as plain icon buttons, navigation items, tabs, and jump links. Typically paired with color.fill.interactive.subtle.*. Do not use for primary buttons; use space.interactive.horizontal.action.",
             "$extensions": {
@@ -331,8 +379,11 @@
     "border": {
       "width": {
         "thin": {
-          "$type": "number",
-          "$value": 1,
+          "$type": "dimension",
+          "$value": {
+            "value": 1,
+            "unit": "px"
+          },
           "$description": "Use to set a thin border width on at least one side of a container. This is the default width for borders and lines (e.g., dividers, cards, static containers). Do not use for strong directional emphasis such as a selected state; use border.width.thicker, border.width.thickest, border.width.interactive.hover, or border.width.interactive.selected.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:336",
@@ -348,8 +399,11 @@
           }
         },
         "thick": {
-          "$type": "number",
-          "$value": 2,
+          "$type": "dimension",
+          "$value": {
+            "value": 2,
+            "unit": "px"
+          },
           "$description": "Use to set a thick border width on at least one side of a container when you need more emphasis than a thin border (e.g., alerts, progress steppers). Do not use as the default static border; use border.width.thin. For selected navigation-style accents, prefer border.width.thicker or border.width.thickest.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:337",
@@ -365,8 +419,11 @@
           }
         },
         "thicker": {
-          "$type": "number",
-          "$value": 3,
+          "$type": "dimension",
+          "$value": {
+            "value": 3,
+            "unit": "px"
+          },
           "$description": "Use to set a very thick border width on one side of a container for strong directional emphasis (e.g., a branded accent for the current page, expanded, or selected state on jump links, navigation, or tabs). Do not apply to all four sides as a default border; use border.width.thin.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:338",
@@ -382,8 +439,11 @@
           }
         },
         "thickest": {
-          "$type": "number",
-          "$value": 4,
+          "$type": "dimension",
+          "$value": {
+            "value": 4,
+            "unit": "px"
+          },
           "$description": "Use to set the heaviest border width on one side of a container for strong directional emphasis (e.g., selected jump links, navigation, or tabs) when thicker is not enough. Do not apply to all four sides as a default border; use border.width.thin.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:339",
@@ -401,7 +461,7 @@
         "interactive": {
           "focus": {
             "ring": {
-              "$type": "number",
+              "$type": "dimension",
               "$value": "{felt.border.width.thicker}",
               "$description": "Use to set the heaviest border width on one side of a container for strong directional emphasis (e.g., selected jump links, navigation, or tabs) when thicker is not enough. Do not apply to all four sides as a default border; use border.width.thin.",
               "$extensions": {
@@ -412,7 +472,7 @@
               }
             },
             "$root": {
-              "$type": "number",
+              "$type": "dimension",
               "$value": "{felt.border.width.thick}",
               "$description": "Use to set the border width of bordered interactive elements in their selected or active state (e.g., secondary buttons, form inputs, menu toggles). Do not use for the default rest state; use border.width.interactive.default. Do not use for hover; use border.width.interactive.hover.",
               "$extensions": {
@@ -425,7 +485,7 @@
             }
           },
           "default": {
-            "$type": "number",
+            "$type": "dimension",
             "$value": "{felt.border.width.thin}",
             "$description": "Use to set the border width of bordered interactive elements in their default state (e.g., secondary buttons, form inputs, menu toggles). Do not use for hover or selected interactive widths; use border.width.interactive.hover or border.width.interactive.selected.",
             "$extensions": {
@@ -436,7 +496,7 @@
             }
           },
           "hover": {
-            "$type": "number",
+            "$type": "dimension",
             "$value": "{felt.border.width.thick}",
             "$description": "Use to set the border width of bordered interactive elements in their hovered state (e.g., secondary buttons, form inputs, menu toggles). Use this so hover is discernible by more than color alone per WCAG. Do not use for the default rest state; use border.width.interactive.default.",
             "$extensions": {
@@ -448,7 +508,7 @@
             }
           },
           "selected": {
-            "$type": "number",
+            "$type": "dimension",
             "$value": "{felt.border.width.thicker}",
             "$description": "Use to set the border width of bordered interactive elements in their selected or active state (e.g., secondary buttons, form inputs, menu toggles). Do not use for the default rest state; use border.width.interactive.default. Do not use for hover; use border.width.interactive.hover.",
             "$extensions": {
@@ -460,7 +520,7 @@
             }
           },
           "pressed": {
-            "$type": "number",
+            "$type": "dimension",
             "$value": "{felt.border.width.thicker}",
             "$description": "Use to set the border width of bordered interactive elements in their pressed state (e.g., secondary buttons, form inputs, menu toggles). Use this so hover is discernible by more than color alone per WCAG. Do not use for the default rest state; use border.width.interactive.default.",
             "$extensions": {
@@ -475,8 +535,11 @@
       },
       "radius": {
         "sharp": {
-          "$type": "number",
-          "$value": 0,
+          "$type": "dimension",
+          "$value": {
+            "value": 0,
+            "unit": "px"
+          },
           "$description": "Use to reset an element's border radius to 0 (sharp corners). Use when rounded corners would be incorrect (e.g., full-bleed edges). Do not use for buttons, controls, or cards that should stay rounded; use border.radius.action, border.radius.control, or border.radius.md instead.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:343",
@@ -492,8 +555,11 @@
           }
         },
         "xs": {
-          "$type": "number",
-          "$value": 8,
+          "$type": "dimension",
+          "$value": {
+            "value": 8,
+            "unit": "px"
+          },
           "$description": "Use to set a very slightly rounded corner radius (e.g., code snippets). Always check for a more specific radius token (border.radius.action, border.radius.control) before applying this generic radius.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:344",
@@ -509,8 +575,11 @@
           }
         },
         "sm": {
-          "$type": "number",
-          "$value": 16,
+          "$type": "dimension",
+          "$value": {
+            "value": 16,
+            "unit": "px"
+          },
           "$description": "Use to set a slightly rounded corner radius (e.g., menu items). Always check for a more specific radius token (border.radius.action, border.radius.control) before applying this generic radius.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:345",
@@ -526,8 +595,11 @@
           }
         },
         "md": {
-          "$type": "number",
-          "$value": 24,
+          "$type": "dimension",
+          "$value": {
+            "value": 24,
+            "unit": "px"
+          },
           "$description": "Use to set a moderately rounded corner radius (e.g., cards and tiles). Always check for a more specific radius token (border.radius.action, border.radius.control) before applying this generic radius.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:346",
@@ -543,8 +615,11 @@
           }
         },
         "lg": {
-          "$type": "number",
-          "$value": 24,
+          "$type": "dimension",
+          "$value": {
+            "value": 24,
+            "unit": "px"
+          },
           "$description": "Use to set a large corner radius (e.g., modals and page containers). Always check for a more specific radius token (border.radius.action, border.radius.control, border.radius.pill) before applying this generic radius. Do not use for buttons; use border.radius.action.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:347",
@@ -560,8 +635,11 @@
           }
         },
         "pill": {
-          "$type": "number",
-          "$value": 999,
+          "$type": "dimension",
+          "$value": {
+            "value": 999,
+            "unit": "px"
+          },
           "$description": "Use to set a circle or pill-shaped radius (e.g., avatars, badges, switches), or for expressive branding. Applying to all four corners at once is optional. For action buttons, prefer border.radius.action.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2136:348",
@@ -578,8 +656,11 @@
         },
         "interactive": {
           "action": {
-            "$type": "number",
-            "$value": 999,
+            "$type": "dimension",
+            "$value": {
+              "value": 999,
+              "unit": "px"
+            },
             "$description": "Use to set the border radius of actions such as CTAs and primary buttons. Do not use for form controls; use border.radius.control. Do not use for generic cards; use border.radius.md or border.radius.lg.",
             "$extensions": {
               "com.figma.variableId": "VariableID:2136:349",
@@ -595,8 +676,11 @@
             }
           },
           "control": {
-            "$type": "number",
-            "$value": 999,
+            "$type": "dimension",
+            "$value": {
+              "value": 999,
+              "unit": "px"
+            },
             "$description": "Use to set the border radius of a control element such as a menu dropdown toggle. Do not use for buttons or CTAs; use border.radius.action.",
             "$extensions": {
               "com.figma.variableId": "VariableID:2136:350",
@@ -612,8 +696,11 @@
             }
           },
           "form-element": {
-            "$type": "number",
-            "$value": 8,
+            "$type": "dimension",
+            "$value": {
+              "value": 8,
+              "unit": "px"
+            },
             "$description": "Use to set the border radius of a form elements such as text input or custom select dropdown toggles. Do not use for buttons or CTAs; use border.radius.action.",
             "$extensions": {
               "com.figma.variableId": "VariableID:2789:206",
@@ -629,8 +716,11 @@
             }
           },
           "focus-ring": {
-            "$type": "number",
-            "$value": 999,
+            "$type": "dimension",
+            "$value": {
+              "value": 999,
+              "unit": "px"
+            },
             "$description": "Use to set the border radius of a form elements such as text input or custom select dropdown toggles. Do not use for buttons or CTAs; use border.radius.action.",
             "$extensions": {
               "com.figma.variableId": "VariableID:3049:1327",
@@ -743,8 +833,11 @@
       "size": {
         "body": {
           "sm": {
-            "$type": "number",
-            "$value": 16,
+            "$type": "dimension",
+            "$value": {
+              "value": 16,
+              "unit": "px"
+            },
             "$description": "Use to set the font size for small body text (e.g., helper text, compact metadata). Do not use for headings; use font.size.heading.*. Prefer font.size.body.md for standard body copy.",
             "$extensions": {
               "com.figma.variableId": "VariableID:2136:351",
@@ -760,8 +853,11 @@
             }
           },
           "md": {
-            "$type": "number",
-            "$value": 18,
+            "$type": "dimension",
+            "$value": {
+              "value": 18,
+              "unit": "px"
+            },
             "$description": "Use to set the font size for medium (default) body text. Do not use for headings; use font.size.heading.*. Use font.size.body.sm or font.size.body.lg when you need smaller or larger body copy.",
             "$extensions": {
               "com.figma.variableId": "VariableID:2136:352",
@@ -777,8 +873,11 @@
             }
           },
           "lg": {
-            "$type": "number",
-            "$value": 20,
+            "$type": "dimension",
+            "$value": {
+              "value": 20,
+              "unit": "px"
+            },
             "$description": "Use to set the font size for large body text (e.g., lead paragraphs). Do not use for headings; use font.size.heading.*. Prefer font.size.body.md for standard body copy.",
             "$extensions": {
               "com.figma.variableId": "VariableID:2136:353",
@@ -796,8 +895,11 @@
         },
         "heading": {
           "xs": {
-            "$type": "number",
-            "$value": 18,
+            "$type": "dimension",
+            "$value": {
+              "value": 18,
+              "unit": "px"
+            },
             "$description": "Use to set the font size for extra small heading text (e.g., subsection titles). Do not use for body copy; use font.size.body.*. Pair with font.family.heading and font.line-height.heading.",
             "$extensions": {
               "com.figma.variableId": "VariableID:2136:354",
@@ -813,8 +915,11 @@
             }
           },
           "sm": {
-            "$type": "number",
-            "$value": 20,
+            "$type": "dimension",
+            "$value": {
+              "value": 20,
+              "unit": "px"
+            },
             "$description": "Use to set the font size for small heading text. Do not use for body copy; use font.size.body.*. Pair with font.family.heading and font.line-height.heading.",
             "$extensions": {
               "com.figma.variableId": "VariableID:2136:355",
@@ -830,8 +935,11 @@
             }
           },
           "md": {
-            "$type": "number",
-            "$value": 24,
+            "$type": "dimension",
+            "$value": {
+              "value": 24,
+              "unit": "px"
+            },
             "$description": "Use to set the font size for medium heading text. Do not use for body copy; use font.size.body.*. Pair with font.family.heading and font.line-height.heading.",
             "$extensions": {
               "com.figma.variableId": "VariableID:2136:356",
@@ -847,8 +955,11 @@
             }
           },
           "lg": {
-            "$type": "number",
-            "$value": 32,
+            "$type": "dimension",
+            "$value": {
+              "value": 32,
+              "unit": "px"
+            },
             "$description": "Use to set the font size for large heading text. Do not use for body copy; use font.size.body.*. Pair with font.family.heading and font.line-height.heading.",
             "$extensions": {
               "com.figma.variableId": "VariableID:2136:357",
@@ -864,8 +975,11 @@
             }
           },
           "xl": {
-            "$type": "number",
-            "$value": 40,
+            "$type": "dimension",
+            "$value": {
+              "value": 40,
+              "unit": "px"
+            },
             "$description": "Use to set the font size for extra large heading text (e.g., page titles). Do not use for body copy; use font.size.body.*. Pair with font.family.heading, font.line-height.heading, and consider font.weight.heading.bold for a single primary heading.",
             "$extensions": {
               "com.figma.variableId": "VariableID:2136:358",
@@ -961,8 +1075,11 @@
         "figma-only": {
           "body": {
             "sm": {
-              "$type": "number",
-              "$value": 24,
+              "$type": "dimension",
+              "$value": {
+                "value": 24,
+                "unit": "px"
+              },
               "$extensions": {
                 "com.figma.variableId": "VariableID:2273:272",
                 "com.figma.scopes": [
@@ -977,8 +1094,11 @@
               }
             },
             "md": {
-              "$type": "number",
-              "$value": 27,
+              "$type": "dimension",
+              "$value": {
+                "value": 27,
+                "unit": "px"
+              },
               "$extensions": {
                 "com.figma.variableId": "VariableID:2273:273",
                 "com.figma.scopes": [
@@ -993,8 +1113,11 @@
               }
             },
             "lg": {
-              "$type": "number",
-              "$value": 30,
+              "$type": "dimension",
+              "$value": {
+                "value": 30,
+                "unit": "px"
+              },
               "$extensions": {
                 "com.figma.variableId": "VariableID:2273:274",
                 "com.figma.scopes": [
@@ -1011,8 +1134,11 @@
           },
           "heading": {
             "xs": {
-              "$type": "number",
-              "$value": 23.399999618530273,
+              "$type": "dimension",
+              "$value": {
+                "value": 23.399999618530273,
+                "unit": "px"
+              },
               "$extensions": {
                 "com.figma.variableId": "VariableID:2273:275",
                 "com.figma.scopes": [
@@ -1027,8 +1153,11 @@
               }
             },
             "sm": {
-              "$type": "number",
-              "$value": 26,
+              "$type": "dimension",
+              "$value": {
+                "value": 26,
+                "unit": "px"
+              },
               "$extensions": {
                 "com.figma.variableId": "VariableID:2273:276",
                 "com.figma.scopes": [
@@ -1043,8 +1172,11 @@
               }
             },
             "md": {
-              "$type": "number",
-              "$value": 31.200000762939453,
+              "$type": "dimension",
+              "$value": {
+                "value": 31.200000762939453,
+                "unit": "px"
+              },
               "$extensions": {
                 "com.figma.variableId": "VariableID:2273:277",
                 "com.figma.scopes": [
@@ -1059,8 +1191,11 @@
               }
             },
             "lg": {
-              "$type": "number",
-              "$value": 46.79999923706055,
+              "$type": "dimension",
+              "$value": {
+                "value": 46.79999923706055,
+                "unit": "px"
+              },
               "$extensions": {
                 "com.figma.variableId": "VariableID:2273:278",
                 "com.figma.scopes": [
@@ -1075,8 +1210,11 @@
               }
             },
             "xl": {
-              "$type": "number",
-              "$value": 52,
+              "$type": "dimension",
+              "$value": {
+                "value": 52,
+                "unit": "px"
+              },
               "$extensions": {
                 "com.figma.variableId": "VariableID:2273:279",
                 "com.figma.scopes": [
@@ -1097,8 +1235,11 @@
     "icon": {
       "size": {
         "2xs": {
-          "$type": "number",
-          "$value": 12,
+          "$type": "dimension",
+          "$value": {
+            "value": 12,
+            "unit": "px"
+          },
           "$description": "Use to set extra small icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2839:32",
@@ -1114,8 +1255,11 @@
           }
         },
         "xs": {
-          "$type": "number",
-          "$value": 14,
+          "$type": "dimension",
+          "$value": {
+            "value": 14,
+            "unit": "px"
+          },
           "$description": "Use to set extra small icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2423:300",
@@ -1131,8 +1275,11 @@
           }
         },
         "sm": {
-          "$type": "number",
-          "$value": 16,
+          "$type": "dimension",
+          "$value": {
+            "value": 16,
+            "unit": "px"
+          },
           "$description": "Use to set small icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2423:299",
@@ -1148,8 +1295,11 @@
           }
         },
         "md": {
-          "$type": "number",
-          "$value": 18,
+          "$type": "dimension",
+          "$value": {
+            "value": 18,
+            "unit": "px"
+          },
           "$description": "Use to set medium icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2423:298",
@@ -1165,8 +1315,11 @@
           }
         },
         "lg": {
-          "$type": "number",
-          "$value": 20,
+          "$type": "dimension",
+          "$value": {
+            "value": 20,
+            "unit": "px"
+          },
           "$description": "Use to set large icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2423:297",
@@ -1182,8 +1335,11 @@
           }
         },
         "xl": {
-          "$type": "number",
-          "$value": 24,
+          "$type": "dimension",
+          "$value": {
+            "value": 24,
+            "unit": "px"
+          },
           "$description": "Use to set extra large icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2423:353",
@@ -1199,8 +1355,11 @@
           }
         },
         "3xl": {
-          "$type": "number",
-          "$value": 40,
+          "$type": "dimension",
+          "$value": {
+            "value": 40,
+            "unit": "px"
+          },
           "$description": "Use to set extra large icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2838:3267",
@@ -1216,8 +1375,11 @@
           }
         },
         "2xl": {
-          "$type": "number",
-          "$value": 32,
+          "$type": "dimension",
+          "$value": {
+            "value": 32,
+            "unit": "px"
+          },
           "$description": "Use to set extra large icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2838:3262",
@@ -1233,8 +1395,11 @@
           }
         },
         "4xl": {
-          "$type": "number",
-          "$value": 48,
+          "$type": "dimension",
+          "$value": {
+            "value": 48,
+            "unit": "px"
+          },
           "$description": "Use to set extra large icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2838:3268",
@@ -1250,8 +1415,11 @@
           }
         },
         "5xl": {
-          "$type": "number",
-          "$value": 64,
+          "$type": "dimension",
+          "$value": {
+            "value": 64,
+            "unit": "px"
+          },
           "$description": "Use to set extra large icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2838:3263",
@@ -1267,8 +1435,11 @@
           }
         },
         "6xl": {
-          "$type": "number",
-          "$value": 80,
+          "$type": "dimension",
+          "$value": {
+            "value": 80,
+            "unit": "px"
+          },
           "$description": "Use to set extra large icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2838:3266",
@@ -1284,8 +1455,11 @@
           }
         },
         "7xl": {
-          "$type": "number",
-          "$value": 96,
+          "$type": "dimension",
+          "$value": {
+            "value": 96,
+            "unit": "px"
+          },
           "$description": "Use to set extra large icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2838:3265",
@@ -1301,8 +1475,11 @@
           }
         },
         "8xl": {
-          "$type": "number",
-          "$value": 128,
+          "$type": "dimension",
+          "$value": {
+            "value": 128,
+            "unit": "px"
+          },
           "$description": "Use to set extra large icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2838:3264",
@@ -1318,8 +1495,11 @@
           }
         },
         "9xl": {
-          "$type": "number",
-          "$value": 128,
+          "$type": "dimension",
+          "$value": {
+            "value": 128,
+            "unit": "px"
+          },
           "$description": "Use to set extra small icon size. Icons should typically inherit the font size of their parent element. Use this token only when the icon must differ from that font size, or when the icon is standalone.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2838:3191",
@@ -1348,8 +1528,11 @@
           }
         },
         "offset": {
-          "$type": "number",
-          "$value": 0,
+          "$type": "dimension",
+          "$value": {
+            "value": 0,
+            "unit": "px"
+          },
           "$description": "Use to set the offset distance for link text decorations so the underline does not collide with glyphs. Pair with text-decoration.link.line and text-decoration.link.style.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2292:296",
@@ -1372,8 +1555,11 @@
     "effect": {
       "blur": {
         "glass": {
-          "$type": "number",
-          "$value": 16,
+          "$type": "dimension",
+          "$value": {
+            "value": 16,
+            "unit": "px"
+          },
           "$description": "Use to set the blur for the glass variant of panels, cards, and drawers that sit directly over the background image. Always pair with color.surface.glass and color.border.glass. Do not apply to nested cards inside an element that already uses glass styles.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2273:287",

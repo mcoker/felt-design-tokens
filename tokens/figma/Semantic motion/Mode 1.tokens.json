@@ -69,8 +69,13 @@
       },
       "easing": {
         "accelerate": {
-          "$type": "easing",
-          "$value": "cubic-bezier(0.4, 0, 0.7, 0.2)",
+          "$type": "cubicBezier",
+          "$value": [
+            0.4,
+            0,
+            0.7,
+            0.2
+          ],
           "$description": "Use to set the timing function for animations that start slowly and accelerate at the end (ease-in). Typically used when elements are collapsing or being removed. Do not use for elements entering a space; use motion.easing.decelerate. For general transitions, use motion.easing.default.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2209:7",
@@ -86,8 +91,13 @@
           }
         },
         "default": {
-          "$type": "easing",
-          "$value": "cubic-bezier(0.4, 0, 0.2, 1)",
+          "$type": "cubicBezier",
+          "$value": [
+            0.4,
+            0,
+            0.2,
+            1
+          ],
           "$description": "Use to set the timing function for animations that start slowly, speed up, then end slowly (ease-in-out). This is the default motion curve. For exit/collapse motion, prefer motion.easing.accelerate. For enter/expand motion, prefer motion.easing.decelerate.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2209:8",
@@ -103,8 +113,13 @@
           }
         },
         "decelerate": {
-          "$type": "easing",
-          "$value": "cubic-bezier(0, 0, 0.2, 1)",
+          "$type": "cubicBezier",
+          "$value": [
+            0,
+            0,
+            0.2,
+            1
+          ],
           "$description": "Use to set the timing function for animations that start quickly and decelerate at the end (ease-out). Typically used when elements are expanding or transitioning into a space. Do not use for collapsing or removal; use motion.easing.accelerate.",
           "$extensions": {
             "com.figma.variableId": "VariableID:2209:9",

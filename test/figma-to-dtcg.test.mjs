@@ -1,86 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { figmaVariablesToDtcg, figmaVariablesToNativeExports } from '../src/figma-to-dtcg.mjs';
-
-test('converts variables, modes, colors, and aliases to DTCG', () => {
-  const response = {
-    variableCollections: {
-      collection: {
-        name: 'Colors', defaultModeId: 'light',
-        modes: [{ modeId: 'light', name: 'Light' }, { modeId: 'dark', name: 'Dark' }]
-      }
-    },
-    variables: {
-      base: {
-        id: 'VariableID:base', name: 'blue/500', variableCollectionId: 'collection',
-        resolvedType: 'COLOR', valuesByMode: { light: { r: 0, g: 0.5, b: 1 }, dark: { r: 0.2, g: 0.6, b: 1, a: 0.8 } }
-      },
-      alias: {
-        id: 'VariableID:alias', name: 'action/primary', variableCollectionId: 'collection',
-        resolvedType: 'COLOR',
-        valuesByMode: { light: { type: 'VARIABLE_ALIAS', id: 'VariableID:base' }, dark: { type: 'VARIABLE_ALIAS', id: 'VariableID:base' } }
-      }
-    }
-  };
-
-  const output = figmaVariablesToDtcg(response);
-  assert.equal(output.Colors.blue['500'].$type, 'color');
-  assert.deepEqual(output.Colors.blue['500'].$value, { colorSpace: 'srgb', components: [0, 0.5, 1], alpha: 1 });
-  assert.equal(output.Colors.action.primary.$value, '{Colors.blue.500}');
-  assert.equal(output.Colors.action.primary.$extensions['org.figma'].modes.Dark, '{Colors.blue.500}');
-});
-
-test('selects a named mode', () => {
-  const response = {
-    variableCollections: {
-      collection: { name: 'Spacing', defaultModeId: 'one', modes: [{ modeId: 'one', name: 'One' }, { modeId: 'two', name: 'Two' }] }
-    },
-    variables: {
-      space: { id: 'VariableID:space', name: 'large', variableCollectionId: 'collection', resolvedType: 'FLOAT', valuesByMode: { one: 8, two: 16 } }
-    }
-  };
-
-  const output = figmaVariablesToDtcg(response, { mode: 'Two' });
-  assert.equal(output.Spacing.large.$value, 16);
-  assert.equal(output.Spacing.large.$type, 'number');
-});
-
-test('converts the wrapped Figma REST response', () => {
-  const output = figmaVariablesToDtcg({
-    status: 200,
-    error: false,
-    meta: {
-      variableCollections: {
-        collection: { name: 'Core', defaultModeId: 'default', modes: [{ modeId: 'default', name: 'Default' }] }
-      },
-      variables: {
-        variable: { id: 'VariableID:variable', name: 'unit', variableCollectionId: 'collection', resolvedType: 'FLOAT', valuesByMode: { default: 4 } }
-      }
-    }
-  });
-
-  assert.equal(output.Core.unit.$value, 4);
-});
-
-test('excludes remote library collections and the Figma-only collection', () => {
-  const output = figmaVariablesToDtcg({
-    meta: {
-      variableCollections: {
-        local: { name: 'Local', remote: false, defaultModeId: 'mode', modes: [{ modeId: 'mode', name: 'Default' }] },
-        library: { name: 'Library', remote: true, defaultModeId: 'mode', modes: [{ modeId: 'mode', name: 'Default' }] },
-        figmaOnly: { name: 'Figma-only', remote: false, defaultModeId: 'mode', modes: [{ modeId: 'mode', name: 'Default' }] }
-      },
-      variables: {
-        localToken: { id: 'VariableID:local', name: 'token', variableCollectionId: 'local', resolvedType: 'STRING', valuesByMode: { mode: 'local' } },
-        remoteToken: { id: 'VariableID:remote', name: 'token', variableCollectionId: 'library', resolvedType: 'STRING', valuesByMode: { mode: 'remote' } },
-        figmaOnlyToken: { id: 'VariableID:figma-only', name: 'token', variableCollectionId: 'figmaOnly', resolvedType: 'STRING', valuesByMode: { mode: 'internal' } }
-      }
-    }
-  });
-
-  assert.deepEqual(Object.keys(output), ['Local']);
-  assert.equal(output.Local.token.$value, 'local');
-});
+import { figmaVariablesToNativeExports } from '../src/figma-to-dtcg.mjs';
 
 test('writes native-style DTCG files per local collection mode', () => {
   const files = figmaVariablesToNativeExports({
@@ -178,7 +98,7 @@ test('preserves extended collection metadata and DTCG group root tokens', () => 
   });
 });
 
-test('keeps the first native token when names collide', () => {
+test('keeps the first API variable when names collide', () => {
   const [file] = figmaVariablesToNativeExports({
     meta: {
       variableCollections: {
@@ -199,13 +119,89 @@ test('keeps the first native token when names collide', () => {
   assert.equal(file.tokens.felt.effect.size['55'].$extensions['com.figma.variableId'], 'VariableID:first');
 });
 
-test('matches native composed-color values and metadata for extension modes', () => {
+test('does not sort variables to match Figma native export order', () => {
+  const [file] = figmaVariablesToNativeExports({
+    meta: {
+      variableCollections: {
+        local: {
+          id: 'local', name: 'Local', variableIds: ['VariableID:a', 'VariableID:z'],
+          modes: [{ modeId: 'default', name: 'Default' }]
+        },
+        external: {
+          id: 'external', name: 'External', key: 'external-key', remote: true,
+          modes: [{ modeId: 'default', name: 'Default' }]
+        }
+      },
+      variables: {
+        z: {
+          id: 'VariableID:z', name: 'group/z', variableCollectionId: 'local', resolvedType: 'FLOAT',
+          valuesByMode: { default: { type: 'VARIABLE_ALIAS', id: 'VariableID:external' } }
+        },
+        a: {
+          id: 'VariableID:a', name: 'group/a', variableCollectionId: 'local', resolvedType: 'FLOAT',
+          valuesByMode: { default: 2 }
+        },
+        external: {
+          id: 'VariableID:external', key: 'external-key', name: 'external/value',
+          variableCollectionId: 'external', resolvedType: 'FLOAT', valuesByMode: { default: 1 }
+        }
+      }
+    }
+  });
+
+  assert.deepEqual(Object.keys(file.tokens.group), ['z', 'a']);
+  assert.deepEqual(Object.keys(file.tokens.group.z.$extensions['com.figma.aliasData']), [
+    'targetVariableId', 'targetVariableName', 'targetVariableSetId', 'targetVariableSetName'
+  ]);
+});
+
+test('rejects missing values, unresolved aliases and circular local references', () => {
+  const response = {
+    variableCollections: {
+      colors: { id: 'colors', name: 'Colors', modes: [{ modeId: 'dark', name: 'Dark' }] }
+    },
+    variables: {
+      a: { id: 'a', name: 'a', variableCollectionId: 'colors', resolvedType: 'COLOR', valuesByMode: {} }
+    }
+  };
+  assert.throws(() => figmaVariablesToNativeExports(response), /Missing value.*Colors\/Dark/);
+  response.variables.a.valuesByMode.dark = { type: 'VARIABLE_ALIAS', id: 'missing' };
+  assert.throws(() => figmaVariablesToNativeExports(response), /Cannot resolve alias "missing"/);
+  response.variables.a.valuesByMode.dark = { type: 'VARIABLE_ALIAS', id: 'b' };
+  response.variables.b = {
+    id: 'b', name: 'b', variableCollectionId: 'colors', resolvedType: 'COLOR',
+    valuesByMode: { dark: { type: 'VARIABLE_ALIAS', id: 'a' } }
+  };
+  assert.throws(() => figmaVariablesToNativeExports(response), /Circular token reference.*a -> b -> a/);
+  response.variables.a.valuesByMode.dark = {
+    color: { r: 1, g: 0, b: 0 }, opacity: { type: 'VARIABLE_ALIAS', id: 'missing' }
+  };
+  assert.throws(() => figmaVariablesToNativeExports(response), /Cannot resolve composed opacity alias "missing"/);
+  response.variables.a.resolvedType = 'UNSUPPORTED';
+  assert.throws(() => figmaVariablesToNativeExports(response), /Unsupported Figma variable type "UNSUPPORTED"/);
+});
+
+test('points references at $root when the target token also has children', () => {
+  const [file] = figmaVariablesToNativeExports({
+    variableCollections: {
+      colors: { id: 'colors', name: 'Colors', modes: [{ modeId: 'one', name: 'One' }] }
+    },
+    variables: {
+      root: { id: 'root', name: 'color/root', variableCollectionId: 'colors', resolvedType: 'COLOR', valuesByMode: { one: { r: 1, g: 0, b: 0 } } },
+      child: { id: 'child', name: 'color/root/child', variableCollectionId: 'colors', resolvedType: 'COLOR', valuesByMode: { one: { r: 0, g: 0, b: 1 } } },
+      alias: { id: 'alias', name: 'color/alias', variableCollectionId: 'colors', resolvedType: 'COLOR', valuesByMode: { one: { type: 'VARIABLE_ALIAS', id: 'root' } } }
+    }
+  });
+  assert.equal(file.tokens.color.alias.$value, '{color.root.$root}');
+});
+
+test('resolves composed colors using the selected extension mode and its overrides', () => {
   const file = figmaVariablesToNativeExports({
     meta: {
       variableCollections: {
         base: {
           id: 'base', name: 'Colors', remote: false, key: 'base-key', defaultModeId: 'light',
-          variableIds: ['VariableID:surface', 'VariableID:white', 'VariableID:black'],
+          variableIds: ['VariableID:surface', 'VariableID:white', 'VariableID:black', 'VariableID:hover', 'VariableID:dependent'],
           modes: [{ modeId: 'light', name: 'Light' }, { modeId: 'dark', name: 'Dark' }]
         },
         extension: {
@@ -220,6 +216,10 @@ test('matches native composed-color values and metadata for extension modes', ()
               }
             }
           }
+        },
+        primitives: {
+          id: 'primitives', name: 'Primitives', remote: true,
+          modes: [{ modeId: 'value', name: 'Value' }]
         }
       },
       variables: {
@@ -237,13 +237,38 @@ test('matches native composed-color values and metadata for extension modes', ()
         'VariableID:black': {
           id: 'VariableID:black', name: 'felt/color/black', variableCollectionId: 'base', resolvedType: 'COLOR',
           valuesByMode: { light: { r: 0, g: 0, b: 0, a: 1 }, dark: { r: 0, g: 0, b: 0, a: 1 } }
+        },
+        'VariableID:hover': {
+          id: 'VariableID:hover', name: 'felt/color/hover', variableCollectionId: 'base', resolvedType: 'COLOR',
+          valuesByMode: {
+            light: { color: { type: 'VARIABLE_ALIAS', id: 'VariableID:white' }, opacity: 25 },
+            dark: { color: { type: 'VARIABLE_ALIAS', id: 'VariableID:white' }, opacity: { type: 'VARIABLE_ALIAS', id: 'VariableID:opacity15' } }
+          }
+        },
+        'VariableID:opacity15': {
+          id: 'VariableID:opacity15', name: 'felt/opacity/15', variableCollectionId: 'primitives',
+          resolvedType: 'FLOAT', valuesByMode: { value: 15 }
+        },
+        'VariableID:dependent': {
+          id: 'VariableID:dependent', name: 'felt/color/dependent', variableCollectionId: 'base', resolvedType: 'COLOR',
+          valuesByMode: {
+            light: { color: { type: 'VARIABLE_ALIAS', id: 'VariableID:surface' }, opacity: 25 },
+            dark: { color: { type: 'VARIABLE_ALIAS', id: 'VariableID:surface' }, opacity: 15 }
+          }
         }
       }
     }
   }).find(({ fileName }) => fileName === 'Extended colors/Dark.tokens.json');
 
   const token = file.tokens.felt.color.surface;
-  assert.deepEqual(token.$value, { colorSpace: 'srgb', components: [1, 1, 1], alpha: 1, hex: '#FFFFFF' });
+  assert.deepEqual(token.$value, { colorSpace: 'srgb', components: [0, 0, 0], alpha: 0.5, hex: '#000000' });
   assert.equal(token.$extensions['com.figma.composedColor'].colorArg.alias.targetVariableName, 'felt/color/black');
   assert.equal(token.$extensions['com.figma.isOverride'], true);
+  assert.deepEqual(file.tokens.felt.color.hover.$value, {
+    colorSpace: 'srgb', components: [1, 1, 1], alpha: Math.fround(0.15), hex: '#FFFFFF'
+  });
+  assert.equal(file.tokens.felt.color.hover.$extensions['com.figma.composedColor'].opacityArg.alias.targetVariableName, 'felt/opacity/15');
+  assert.deepEqual(file.tokens.felt.color.dependent.$value, {
+    colorSpace: 'srgb', components: [0, 0, 0], alpha: Math.fround(0.15), hex: '#000000'
+  });
 });

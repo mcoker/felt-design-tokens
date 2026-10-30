@@ -9,87 +9,6 @@ const TYPE_MAP = {
   EASING: 'easing'
 };
 
-/**
- * Convert the response from GET /files/:key/variables/local to DTCG JSON.
- * Figma variable names use slash-separated paths, which map naturally to
- * DTCG groups. Collection names are included to avoid collisions between
- * collections that contain variables with the same name.
- */
-export function figmaVariablesToDtcg(response, { mode } = {}) {
-  const data = response.meta ?? response;
-  const collections = data.variableCollections ?? {};
-  // The endpoint can include library variables as well as variables created
-  // in this file. Do not export collections marked remote by Figma or the
-  // file-local Figma-only collection.
-  const variables = Object.values(data.variables ?? {}).filter(
-    (variable) => {
-      const collection = collections[variable.variableCollectionId];
-      return collection?.remote !== true && collection?.name !== 'Figma-only';
-    }
-  );
-  const basePaths = new Map();
-  const pathCounts = new Map();
-  const variablePaths = new Map();
-
-  for (const variable of variables) {
-    const collection = collections[variable.variableCollectionId];
-    const path = [collection?.name, ...variable.name.split('/')]
-      .filter(Boolean)
-      .map(normalizePathSegment);
-    const basePath = path.join('.');
-    basePaths.set(variable.id, path);
-    pathCounts.set(basePath, (pathCounts.get(basePath) ?? 0) + 1);
-  }
-
-  for (const variable of variables) {
-    const path = basePaths.get(variable.id);
-    const basePath = path.join('.');
-    const hasChildPath = [...basePaths.values()].some((otherPath) =>
-      otherPath.length > path.length && otherPath.slice(0, path.length).every((part, index) => part === path[index])
-    );
-    if (pathCounts.get(basePath) > 1 || hasChildPath) {
-      path[path.length - 1] = `${path.at(-1)}--${normalizePathSegment(variable.id.replace(/^VariableID:/, ''))}`;
-    }
-    variablePaths.set(variable.id, path);
-  }
-
-  const root = {};
-  for (const variable of variables) {
-    const collection = collections[variable.variableCollectionId];
-    const collectionMode = selectMode(collection, mode);
-    const selectedModeId = collectionMode?.modeId ?? Object.keys(variable.valuesByMode ?? {})[0];
-    const unresolvedAliases = [];
-    const valuesByMode = Object.fromEntries(
-      Object.entries(variable.valuesByMode ?? {}).map(([modeId, value]) => {
-        const name = collection?.modes?.find((item) => item.modeId === modeId)?.name ?? modeId;
-        return [name, convertValue(value, variablePaths, unresolvedAliases)];
-      })
-    );
-    const value = convertValue(variable.valuesByMode?.[selectedModeId], variablePaths, unresolvedAliases);
-    const token = {
-      $type: TYPE_MAP[resolvedType(variable)] ?? 'unknown',
-      $value: value,
-      $extensions: {
-        'org.figma': {
-          id: variable.id,
-          collectionId: variable.variableCollectionId,
-          collectionName: collection?.name,
-          scopes: variable.scopes,
-          hiddenFromPublishing: variable.hiddenFromPublishing,
-          modes: valuesByMode,
-          ...(unresolvedAliases.length ? { unresolvedAliases: [...new Set(unresolvedAliases)] } : {})
-        }
-      }
-    };
-
-    if (variable.description) token.$description = variable.description;
-    if (variable.codeSyntax) token.$extensions['org.figma'].codeSyntax = variable.codeSyntax;
-    setPath(root, variablePaths.get(variable.id), token);
-  }
-
-  return root;
-}
-
 export async function fetchFigmaVariables({ fileKey, token, tokenType = 'personal' }) {
   if (!fileKey) throw new Error('A Figma file key is required.');
   if (!token) throw new Error('A Figma token is required.');
@@ -125,10 +44,10 @@ export function figmaVariablesToNativeExports(response, { mode } = {}) {
     if (collection.remote || collection.name === 'Figma-only') continue;
 
     const baseCollection = collections[collection.baseCollectionId] ?? collection;
-    const collectionVariables = (baseCollection.variableIds ?? [])
-      .map((id) => variablesById.get(id))
-      .filter((variable) => variable && !variable.deletedButReferenced)
-      .sort((a, b) => a.name.localeCompare(b.name) || String(a.key ?? a.id).localeCompare(String(b.key ?? b.id)));
+    const collectionVariables = variables.filter(
+      (variable) => variable.variableCollectionId === baseCollection.id && !variable.deletedButReferenced
+    );
+    const exportedIds = new Set(collectionVariables.map((variable) => variable.id));
     const modes = collection.modes ?? [];
 
     for (const selectedMode of modes) {
@@ -143,6 +62,7 @@ export function figmaVariablesToNativeExports(response, { mode } = {}) {
         baseModeName: baseMode?.name ?? selectedMode.name
       };
       const tokenTree = {};
+      const referenceTokens = new Set();
 
       for (const variable of collectionVariables) {
         const overrideModes = collection.variableOverrides?.[variable.id];
@@ -150,30 +70,26 @@ export function figmaVariablesToNativeExports(response, { mode } = {}) {
         const rawValue = isOverride
           ? overrideModes[selectedMode.modeId]
           : variable.valuesByMode?.[baseModeId] ?? variable.valuesByMode?.[selectedMode.modeId];
-        // Figma's native exporter serializes extended-set composed color
-        // values from the base collection's default mode, while its metadata
-        // reflects the selected mode's composed color and override state.
-        const valueRaw = collection.isExtension && isComposedColor(rawValue)
-          ? variable.valuesByMode?.[baseCollection.defaultModeId] ?? rawValue
-          : rawValue;
-        const useDefaultModeForComposedColor = valueRaw !== rawValue;
-        const valueContext = useDefaultModeForComposedColor
-          ? {
-              ...context,
-              baseModeId: baseCollection.defaultModeId,
-              baseModeName: baseCollection.modes?.find((item) => item.modeId === baseCollection.defaultModeId)?.name ?? context.baseModeName
-            }
-          : context;
-        const token = createNativeToken(variable, valueRaw, valueContext, {
+        if (rawValue === undefined) {
+          throw new Error(`Missing value for "${variable.name}" in "${collection.name}/${selectedMode.name}".`);
+        }
+        // Resolve the selected mode (including extension overrides), even
+        // though Figma's native export sometimes uses the default mode for
+        // composed color $values in extended collections.
+        const token = createNativeToken(variable, rawValue, context, {
           variablesById,
           collections,
           isOverride: Boolean(isOverride),
           baseCollectionId: baseCollection.id,
-          modeName: context.baseModeName,
-          metadataValue: rawValue
+          exportedIds
         });
+        if (isVariableAlias(rawValue) && exportedIds.has(variablesById.get(rawValue.id)?.id)) {
+          referenceTokens.add(token);
+        }
         setNativePath(tokenTree, variable.name.split('/').filter(Boolean), token);
       }
+
+      validateNativeReferences(tokenTree, referenceTokens, collection.name, selectedMode.name);
 
       const rootExtensions = { 'com.figma.modeName': selectedMode.name };
       if (collection.isExtension) {
@@ -202,7 +118,8 @@ export function figmaVariablesToNativeExports(response, { mode } = {}) {
 }
 
 function createNativeToken(variable, rawValue, context, resolution) {
-  const type = TYPE_MAP[resolvedType(variable)] ?? 'unknown';
+  const type = TYPE_MAP[resolvedType(variable)];
+  if (!type) throw new Error(`Unsupported Figma variable type "${resolvedType(variable)}" for "${variable.name}".`);
   const extensions = { 'com.figma.variableId': variable.id };
   if (variable.hiddenFromPublishing) extensions['com.figma.hiddenFromPublishing'] = true;
   if (variable.scopes?.length) {
@@ -211,19 +128,20 @@ function createNativeToken(variable, rawValue, context, resolution) {
   if (resolvedType(variable) === 'STRING') extensions['com.figma.type'] = 'string';
 
   let value;
-  const metadataValue = resolution.metadataValue ?? rawValue;
-  if (isComposedColor(metadataValue)) {
+  if (isComposedColor(rawValue)) {
     value = resolveComposedColor(rawValue, context, resolution);
     extensions['com.figma.composedColor'] = {
-      colorArg: nativeComposedArgument(metadataValue.color, resolution, resolution.baseCollectionId),
-      opacityArg: nativeComposedArgument(metadataValue.opacity, resolution, resolution.baseCollectionId)
+      colorArg: nativeComposedArgument(rawValue.color, resolution, resolution.baseCollectionId),
+      opacityArg: nativeComposedArgument(rawValue.opacity, resolution, resolution.baseCollectionId)
     };
   } else if (isVariableAlias(rawValue)) {
     const target = resolution.variablesById.get(rawValue.id);
-    if (target && target.variableCollectionId === resolution.baseCollectionId) {
+    if (target && resolution.exportedIds.has(target.id)) {
       value = `{${target.name.split('/').join('.')}}`;
     } else {
-      value = formatNativeValue(type, resolveAliasValue(rawValue.id, context, resolution));
+      const resolved = resolveAliasValue(rawValue.id, context, resolution);
+      if (resolved === undefined) throw new Error(`Cannot resolve alias "${rawValue.id}" for "${variable.name}".`);
+      value = formatNativeValue(type, resolved);
       extensions['com.figma.aliasData'] = nativeAliasData(rawValue.id, resolution);
     }
   } else {
@@ -262,12 +180,17 @@ function resolveComposedColor(value, context, resolution) {
   const opacityValue = isComposedColor(value) ? value.opacity : undefined;
   if (isVariableAlias(color)) {
     color = resolveAliasValue(color.id, context, resolution);
+    if (color === undefined) throw new Error(`Cannot resolve composed color alias "${value.color.id}".`);
   }
   let opacity = opacityValue;
   if (isVariableAlias(opacityValue)) opacity = resolveAliasValue(opacityValue.id, context, resolution);
-  if (color && typeof color === 'object' && ['r', 'g', 'b'].every((channel) => channel in color) && typeof opacity === 'number') {
-    color = { ...color, a: Math.fround(opacity / 100) };
+  if (isVariableAlias(opacityValue) && opacity === undefined) {
+    throw new Error(`Cannot resolve composed opacity alias "${opacityValue.id}".`);
   }
+  if (!color || typeof color !== 'object' || !['r', 'g', 'b'].every((channel) => typeof color[channel] === 'number') || typeof opacity !== 'number') {
+    throw new Error('A composed color must resolve to RGB components and numeric opacity.');
+  }
+  color = { ...color, a: Math.fround(opacity / 100) };
   return formatNativeValue('color', color);
 }
 
@@ -283,9 +206,10 @@ function nativeAliasData(variableId, { variablesById, collections }, baseCollect
   const variable = variablesById.get(variableId);
   if (!variable) return { targetVariableName: variableId };
   const collection = collections[variable.variableCollectionId];
-  const metadata = { targetVariableName: variable.name };
-  if (variable.variableCollectionId === baseCollectionId) return metadata;
+  if (variable.variableCollectionId === baseCollectionId) return { targetVariableName: variable.name };
+  const metadata = {};
   if (variable.key) metadata.targetVariableId = `VariableID:${variable.key}/-1:-1`;
+  metadata.targetVariableName = variable.name;
   if (collection?.key) metadata.targetVariableSetId = `VariableCollectionId:${collection.key}/-1:-1`;
   if (collection?.name) metadata.targetVariableSetName = collection.name;
   return metadata;
@@ -300,7 +224,12 @@ function resolveAliasValue(variableId, context, resolution, seen = new Set()) {
   const targetCollection = resolution.collections[target.variableCollectionId];
   if (!targetCollection) return undefined;
   const targetMode = selectAliasMode(targetCollection, context);
-  let value = target.valuesByMode?.[targetMode?.modeId];
+  const override = targetCollection.id === context.baseCollection.id
+    ? context.collection.variableOverrides?.[target.id]
+    : undefined;
+  const value = override && Object.hasOwn(override, context.mode.modeId)
+    ? override[context.mode.modeId]
+    : target.valuesByMode?.[targetMode?.modeId];
   if (isVariableAlias(value)) return resolveAliasValue(value.id, { ...context, baseModeName: targetMode.name }, resolution, seen);
   if (isComposedColor(value)) {
     return isVariableAlias(value.color)
@@ -366,49 +295,37 @@ function setNativePath(root, segments, value) {
   current[leaf] = value;
 }
 
-function selectMode(collection, requestedMode) {
-  if (!collection?.modes?.length) return undefined;
-  if (!requestedMode) return collection.modes.find((item) => item.modeId === collection.defaultModeId) ?? collection.modes[0];
-  return collection.modes.find((item) => item.modeId === requestedMode || item.name === requestedMode)
-    ?? (() => { throw new Error(`Mode "${requestedMode}" was not found in collection "${collection.name}".`); })();
+function validateNativeReferences(root, referenceTokens, collectionName, modeName) {
+  const tokens = new Map();
+  function collect(node, path = []) {
+    for (const [key, value] of Object.entries(node)) {
+      if (key === '$extensions') continue;
+      const tokenPath = [...path, key];
+      if (value?.$type) tokens.set(tokenPath.join('.'), value);
+      else if (value && typeof value === 'object') collect(value, tokenPath);
+    }
+  }
+  collect(root);
+  const checked = new Set();
+  function visit(path, visiting = new Set()) {
+    if (checked.has(path)) return;
+    if (visiting.has(path)) throw new Error(`Circular token reference in "${collectionName}/${modeName}": ${[...visiting, path].join(' -> ')}`);
+    const token = tokens.get(path);
+    if (!token) throw new Error(`Missing token reference "${path}" in "${collectionName}/${modeName}".`);
+    const reference = referenceTokens.has(token) && /^\{([^{}]+)\}$/.exec(token.$value);
+    if (reference) {
+      // A variable may be both a token and a group. Refer to its $root token.
+      const target = tokens.has(reference[1]) ? reference[1] : `${reference[1]}.$root`;
+      if (tokens.has(target) && target !== reference[1]) token.$value = `{${target}}`;
+      visiting.add(path);
+      visit(target, visiting);
+      visiting.delete(path);
+    }
+    checked.add(path);
+  }
+  for (const path of tokens.keys()) visit(path);
 }
 
 function resolvedType(variable) {
   return variable.resolvedType ?? variable.type;
-}
-
-function convertValue(value, variablePaths, unresolvedAliases) {
-  if (value && value.type === 'VARIABLE_ALIAS') {
-    const path = variablePaths.get(value.id);
-    if (!path) {
-      unresolvedAliases?.push(value.id);
-      return `{figma.${value.id.replace(/^VariableID:/, '').replace(/[^A-Za-z0-9_-]+/g, '-') }}`;
-    }
-    return `{${path.join('.')}}`;
-  }
-  if (value && typeof value === 'object' && ['r', 'g', 'b'].every((channel) => channel in value)) {
-    return { colorSpace: 'srgb', components: [value.r, value.g, value.b], alpha: value.a ?? 1 };
-  }
-  return value;
-}
-
-function normalizePathSegment(segment) {
-  return segment.trim().replace(/\s+/g, '-').replace(/\./g, '-');
-}
-
-function setPath(root, segments, value) {
-  const path = segments.map(normalizePathSegment);
-  if (!path.length) throw new Error('A Figma variable must have a name.');
-  let current = root;
-  for (const segment of path.slice(0, -1)) {
-    if (current[segment] === undefined) current[segment] = {};
-    if (typeof current[segment] !== 'object' || '$value' in current[segment]) {
-      throw new Error(`Token path collision at "${path.join('.')}".`);
-    }
-    current = current[segment];
-  }
-  if (current[path.at(-1)] !== undefined) {
-    throw new Error(`Token path collision at "${path.join('.')}".`);
-  }
-  current[path.at(-1)] = value;
 }

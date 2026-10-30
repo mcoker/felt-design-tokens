@@ -2,6 +2,46 @@
   "felt": {
     "motion": {
       "duration": {
+        "sm": {
+          "$type": "duration",
+          "$value": {
+            "value": 100,
+            "unit": "ms"
+          },
+          "$description": "Use to set the duration for short, simple animations. Always defer to more specific duration tokens (e.g., motion.duration.fade.short) before using this generic duration token.",
+          "$extensions": {
+            "com.figma.variableId": "VariableID:2209:3",
+            "com.figma.scopes": [
+              "ALL_SCOPES"
+            ],
+            "com.figma.aliasData": {
+              "targetVariableId": "VariableID:024a54b300eb9455b719cca7404d16976410ea37/-1:-1",
+              "targetVariableName": "felt/duration/10",
+              "targetVariableSetId": "VariableCollectionId:4480e1be086ee31a576e07093e9bcefb259ac2e0/-1:-1",
+              "targetVariableSetName": "Primitives"
+            }
+          }
+        },
+        "md": {
+          "$type": "duration",
+          "$value": {
+            "value": 200,
+            "unit": "ms"
+          },
+          "$description": "Use to set the duration for standard animations. Always defer to more specific duration tokens (e.g., motion.duration.fade.default) before using this generic duration token.",
+          "$extensions": {
+            "com.figma.variableId": "VariableID:2209:4",
+            "com.figma.scopes": [
+              "ALL_SCOPES"
+            ],
+            "com.figma.aliasData": {
+              "targetVariableId": "VariableID:9d033317e04aa40a8f84d1a5e3f2e74c51c46702/-1:-1",
+              "targetVariableName": "felt/duration/20",
+              "targetVariableSetId": "VariableCollectionId:4480e1be086ee31a576e07093e9bcefb259ac2e0/-1:-1",
+              "targetVariableSetName": "Primitives"
+            }
+          }
+        },
         "fade": {
           "default": {
             "$type": "duration",
@@ -25,46 +65,6 @@
               ]
             }
           }
-        },
-        "md": {
-          "$type": "duration",
-          "$value": {
-            "value": 200,
-            "unit": "ms"
-          },
-          "$description": "Use to set the duration for standard animations. Always defer to more specific duration tokens (e.g., motion.duration.fade.default) before using this generic duration token.",
-          "$extensions": {
-            "com.figma.variableId": "VariableID:2209:4",
-            "com.figma.scopes": [
-              "ALL_SCOPES"
-            ],
-            "com.figma.aliasData": {
-              "targetVariableName": "felt/duration/20",
-              "targetVariableId": "VariableID:9d033317e04aa40a8f84d1a5e3f2e74c51c46702/-1:-1",
-              "targetVariableSetId": "VariableCollectionId:4480e1be086ee31a576e07093e9bcefb259ac2e0/-1:-1",
-              "targetVariableSetName": "Primitives"
-            }
-          }
-        },
-        "sm": {
-          "$type": "duration",
-          "$value": {
-            "value": 100,
-            "unit": "ms"
-          },
-          "$description": "Use to set the duration for short, simple animations. Always defer to more specific duration tokens (e.g., motion.duration.fade.short) before using this generic duration token.",
-          "$extensions": {
-            "com.figma.variableId": "VariableID:2209:3",
-            "com.figma.scopes": [
-              "ALL_SCOPES"
-            ],
-            "com.figma.aliasData": {
-              "targetVariableName": "felt/duration/10",
-              "targetVariableId": "VariableID:024a54b300eb9455b719cca7404d16976410ea37/-1:-1",
-              "targetVariableSetId": "VariableCollectionId:4480e1be086ee31a576e07093e9bcefb259ac2e0/-1:-1",
-              "targetVariableSetName": "Primitives"
-            }
-          }
         }
       },
       "easing": {
@@ -78,25 +78,8 @@
               "ALL_SCOPES"
             ],
             "com.figma.aliasData": {
-              "targetVariableName": "felt/easing/10",
               "targetVariableId": "VariableID:e16d7557959e5b9378c83da6d3862a4e1435cfde/-1:-1",
-              "targetVariableSetId": "VariableCollectionId:4480e1be086ee31a576e07093e9bcefb259ac2e0/-1:-1",
-              "targetVariableSetName": "Primitives"
-            }
-          }
-        },
-        "decelerate": {
-          "$type": "easing",
-          "$value": "cubic-bezier(0, 0, 0.2, 1)",
-          "$description": "Use to set the timing function for animations that start quickly and decelerate at the end (ease-out). Typically used when elements are expanding or transitioning into a space. Do not use for collapsing or removal; use motion.easing.accelerate.",
-          "$extensions": {
-            "com.figma.variableId": "VariableID:2209:9",
-            "com.figma.scopes": [
-              "ALL_SCOPES"
-            ],
-            "com.figma.aliasData": {
-              "targetVariableName": "felt/easing/30",
-              "targetVariableId": "VariableID:0ef3a4185db2a5daf8039fefbd00590bb0ff648f/-1:-1",
+              "targetVariableName": "felt/easing/10",
               "targetVariableSetId": "VariableCollectionId:4480e1be086ee31a576e07093e9bcefb259ac2e0/-1:-1",
               "targetVariableSetName": "Primitives"
             }
@@ -112,8 +95,25 @@
               "ALL_SCOPES"
             ],
             "com.figma.aliasData": {
-              "targetVariableName": "felt/easing/20",
               "targetVariableId": "VariableID:d45877c1eb4c9bfa7d18e235a847db7f3199c0bd/-1:-1",
+              "targetVariableName": "felt/easing/20",
+              "targetVariableSetId": "VariableCollectionId:4480e1be086ee31a576e07093e9bcefb259ac2e0/-1:-1",
+              "targetVariableSetName": "Primitives"
+            }
+          }
+        },
+        "decelerate": {
+          "$type": "easing",
+          "$value": "cubic-bezier(0, 0, 0.2, 1)",
+          "$description": "Use to set the timing function for animations that start quickly and decelerate at the end (ease-out). Typically used when elements are expanding or transitioning into a space. Do not use for collapsing or removal; use motion.easing.accelerate.",
+          "$extensions": {
+            "com.figma.variableId": "VariableID:2209:9",
+            "com.figma.scopes": [
+              "ALL_SCOPES"
+            ],
+            "com.figma.aliasData": {
+              "targetVariableId": "VariableID:0ef3a4185db2a5daf8039fefbd00590bb0ff648f/-1:-1",
+              "targetVariableName": "felt/easing/30",
               "targetVariableSetId": "VariableCollectionId:4480e1be086ee31a576e07093e9bcefb259ac2e0/-1:-1",
               "targetVariableSetName": "Primitives"
             }

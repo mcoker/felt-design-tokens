@@ -22,7 +22,7 @@ try {
   for (const file of files) {
     const destination = path.join(root, safeName(file.collectionName), `${safeName(file.modeName)}.tokens.json`);
     await mkdir(path.dirname(destination), { recursive: true });
-    await writeFile(destination, `${JSON.stringify(file.tokens, null, 2)}\n`, 'utf8');
+    await writeFile(destination, JSON.stringify(file.tokens, null, 2), 'utf8');
   }
   process.stdout.write(`Exported ${files.length} mode file${files.length === 1 ? '' : 's'} to ${root}\n`);
 } catch (error) {

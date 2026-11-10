@@ -1,32 +1,55 @@
 # Felt design tokens
-Design tokens for the Felt design system
 
-## Export Figma variables as DTCG JSON
+Design tokens for the Felt design system.
 
-Requires Node.js 18 or newer and access to Figma's Variables REST API (an Enterprise organization member with file view access and the `file_variables:read` scope). The exporter uses Figma's local variables REST endpoint and writes one DTCG-style JSON file per local collection and mode. Set `FIGMA_TOKEN` and `FIGMA_FILE_KEY` in your environment (the key is the identifier in the Figma file URL), then run:
+## Requirements
+
+- Node.js 18 or newer. No dependencies need to be installed.
+- Access to Figma's Variables REST API: Enterprise organization membership, file view access, and a token with the `file_variables:read` scope.
+
+## Export JSON
+
+Set your Figma token and file key (the identifier in the Figma file URL), then run the exporter:
 
 ```sh
+export FIGMA_TOKEN="your-figma-token"
+export FIGMA_FILE_KEY="your-file-key"
+
 node bin/figma-variables-to-dtcg.mjs --output "./tokens/figma"
 ```
 
-Alternatively, pass credentials explicitly (the token may be visible in your shell history or process list; environment variables are preferred):
+The exporter writes one file per local collection and mode:
 
-```sh
-node bin/figma-variables-to-dtcg.mjs \
-  --file "$FIGMA_FILE_KEY" \
-  --token "$FIGMA_TOKEN" \
-  --output "./tokens/figma"
+```text
+tokens/figma/<collection>/<mode>.tokens.json
 ```
 
-Only file-local collections are exported; remote library collections and `Figma-only` are excluded. Every mode is exported by default. Use `--mode MODE_NAME` (or a mode ID) to export only matching modes, and `--token-type oauth` for an OAuth access token. The files retain Figma metadata for traceability; JSON key order is not significant.
+Remote library collections, the `Figma-only` collection, and variables with `figma-only` anywhere in their name are excluded.
 
-Figma float variables representing lengths (spacing, radius, stroke width, size, font size, and effect measurements) export as DTCG `dimension` values in pixels. Opacity, font weight, z-index, and proportional line heights remain unitless `number` tokens; explicitly named `figma-only` line-height measurements export in pixels. The exporter interprets duration numbers as seconds and outputs milliseconds (verify this assumption against your Figma source). Cubic Bézier easing values export as DTCG `cubicBezier` arrays. Figma's REST API documents only `BOOLEAN`, `COLOR`, `FLOAT`, and `STRING` as `resolvedType` values, so the exporter explicitly interprets the `felt/duration/*`, `felt/motion/duration/*`, `felt/easing/*`, and `felt/motion/easing/*` families as duration and easing tokens; other families need their own mapping. This changes the shape of these tokens compared with older exports, so update downstream Style Dictionary transforms accordingly.
+### Options
 
-The exporter validates names and references and fails on duplicate token paths. Requests time out after 15 seconds and retry transient failures up to twice, honoring `Retry-After` (capped at 30 seconds per attempt). Successful exports stage files before updating the output. A `.figma-variables-export.json` manifest records exporter-managed files: subsequent full exports prune obsolete managed files, while `--mode` exports leave other modes in place. Files that existed before the first manifest are not pruned automatically; unrelated files are never pruned.
+| Option | Description |
+| --- | --- |
+| `--output DIR` | Required output directory. |
+| `--mode MODE` | Export only modes matching this name or ID. Defaults to all modes. |
+| `--file FILE_KEY` | Override `FIGMA_FILE_KEY`. |
+| `--token TOKEN` | Override `FIGMA_TOKEN`. Prefer the environment variable to avoid exposing the token in process arguments. |
+| `--token-type personal\|oauth` | Token type. Defaults to `personal`; also configurable with `FIGMA_TOKEN_TYPE`. |
 
-For composed colors in extended collections, `$value` resolves the selected mode and its overrides, as displayed in Figma. Figma's native JSON export can instead serialize the base collection's default-mode color while retaining the selected mode's `com.figma.composedColor` metadata; those `$value` fields will therefore differ from the native export. A missing mode value, unresolved alias, or circular token reference fails the export instead of producing incomplete tokens.
+Full exports update generated files and remove obsolete files tracked by `.figma-variables-export.json`. Exports using `--mode` leave other modes in place. Files not tracked by the manifest are not removed.
 
-Run the exporter tests with:
+## JSON format
+
+- Variable names separated by `/` become nested token groups. Tokens use `$type` and `$value`, with descriptions and Figma metadata where available.
+- Aliases to other exported tokens in the same collection remain token references; other aliases resolve to values.
+- Length-scoped numbers export as `dimension` values in pixels. Other numbers, including opacity, font weight, z-index, and proportional line height, remain unitless.
+- `felt/duration/*` and `felt/motion/duration/*` values are treated as seconds and exported as `duration` values in milliseconds. Ensure the source values use seconds.
+- `felt/easing/*` and `felt/motion/easing/*` values export as `cubicBezier` arrays. Other duration or easing names need an explicit mapping in the exporter.
+- Composed colors resolve the selected mode and its overrides, matching Figma's displayed color.
+
+Invalid or duplicate token paths, missing values, unresolved aliases, and circular references cause the export to fail rather than write incomplete tokens.
+
+## Tests
 
 ```sh
 node --test test/*.test.mjs

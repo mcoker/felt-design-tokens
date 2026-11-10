@@ -61,6 +61,55 @@ test('writes native-style DTCG files per local collection mode', () => {
   ]);
 });
 
+test('excludes variables containing figma-only while resolving aliases to them', () => {
+  for (const variableIds of [undefined, ['hidden', 'nested', 'suffix', 'missing', 'alias', 'visible']]) {
+    const files = figmaVariablesToNativeExports({
+      variableCollections: {
+        local: {
+          id: 'local', name: 'Tokens', variableIds,
+          modes: [{ modeId: 'light', name: 'Light' }, { modeId: 'dark', name: 'Dark' }]
+        }
+      },
+      variables: {
+        hidden: {
+          id: 'hidden', name: 'figma-only/base', variableCollectionId: 'local', resolvedType: 'FLOAT',
+          valuesByMode: { light: 4, dark: 8 }
+        },
+        nested: {
+          id: 'nested', name: 'font/figma-only/family', variableCollectionId: 'local', resolvedType: 'STRING',
+          valuesByMode: { light: 'Hidden', dark: 'Hidden' }
+        },
+        suffix: {
+          id: 'suffix', name: 'font/family-figma-only', variableCollectionId: 'local', resolvedType: 'STRING',
+          valuesByMode: { light: 'Hidden', dark: 'Hidden' }
+        },
+        missing: {
+          id: 'missing', name: 'figma-only/missing', variableCollectionId: 'local', resolvedType: 'FLOAT',
+          valuesByMode: {}
+        },
+        alias: {
+          id: 'alias', name: 'public/alias', variableCollectionId: 'local', resolvedType: 'FLOAT',
+          valuesByMode: {
+            light: { type: 'VARIABLE_ALIAS', id: 'hidden' },
+            dark: { type: 'VARIABLE_ALIAS', id: 'hidden' }
+          }
+        },
+        visible: {
+          id: 'visible', name: 'public/value', variableCollectionId: 'local', resolvedType: 'FLOAT',
+          valuesByMode: { light: 1, dark: 2 }
+        }
+      }
+    });
+
+    assert.equal(files.length, 2);
+    for (const [index, { tokens }] of files.entries()) {
+      assert.deepEqual(Object.keys(tokens), ['public', '$extensions']);
+      assert.equal(tokens.public.alias.$value, index === 0 ? 4 : 8);
+      assert.equal(tokens.public.value.$value, index + 1);
+    }
+  }
+});
+
 test('preserves extended collection metadata and DTCG group root tokens', () => {
   const file = figmaVariablesToNativeExports({
     meta: {

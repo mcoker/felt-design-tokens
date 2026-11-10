@@ -69,7 +69,7 @@ export function figmaVariablesToNativeExports(response, { mode } = {}) {
 
     const baseCollection = collectionRoot(collection, collections);
     const collectionIds = collection.variableIds && new Set(collection.variableIds);
-    const collectionVariables = variables.filter((variable) => !variable.deletedButReferenced && (
+    const collectionVariables = variables.filter((variable) => !variable.deletedButReferenced && !variable.name.includes('figma-only') && (
       collectionIds ? collectionIds.has(variable.id) : variable.variableCollectionId === baseCollection.id
     ));
     const exportedIds = new Set(collectionVariables.map((variable) => variable.id));

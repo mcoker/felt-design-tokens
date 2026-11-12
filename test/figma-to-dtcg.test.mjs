@@ -167,8 +167,8 @@ test('rejects colliding API variable names with both variable IDs', () => {
   }), /Duplicate token path "felt\/effect\/size\/55".*VariableID:first and VariableID:second/);
 });
 
-test('does not sort variables to match Figma native export order', () => {
-  const [file] = figmaVariablesToNativeExports({
+test('sorts token paths so exports are stable across API response order', () => {
+  const response = {
     meta: {
       variableCollections: {
         local: {
@@ -195,12 +195,17 @@ test('does not sort variables to match Figma native export order', () => {
         }
       }
     }
-  });
+  };
 
-  assert.deepEqual(Object.keys(file.tokens.group), ['z', 'a']);
+  const [file] = figmaVariablesToNativeExports(response);
+  assert.deepEqual(Object.keys(file.tokens.group), ['a', 'z']);
   assert.deepEqual(Object.keys(file.tokens.group.z.$extensions['com.figma.aliasData']), [
     'targetVariableId', 'targetVariableName', 'targetVariableSetId', 'targetVariableSetName'
   ]);
+
+  const reversed = structuredClone(response);
+  reversed.meta.variables = { external: reversed.meta.variables.external, a: reversed.meta.variables.a, z: reversed.meta.variables.z };
+  assert.deepEqual(figmaVariablesToNativeExports(reversed)[0].tokens, file.tokens);
 });
 
 test('rejects missing values, unresolved aliases and circular local references', () => {
@@ -341,6 +346,32 @@ test('exports inherited and locally created extension variables and multi-level 
   assert.equal(leaf.size.a.$value, 2);
   assert.equal(leaf.size.a.$extensions['com.figma.isOverride'], true);
   assert.equal(leaf.size.b.$value, 3);
+});
+
+test('preserves opacity when a plain alias targets a composed color in another collection', () => {
+  const file = figmaVariablesToNativeExports({
+    variableCollections: {
+      primitives: { id: 'primitives', name: 'Primitives', modes: [{ modeId: 'value', name: 'Value' }] },
+      semantic: { id: 'semantic', name: 'Semantic colors', modes: [{ modeId: 'light', name: 'Light' }] },
+      probe: { id: 'probe', name: 'Opacity probe', modes: [{ modeId: 'probe-light', name: 'Light' }] }
+    },
+    variables: {
+      gray30: { id: 'gray30', name: 'felt/color/gray/30', variableCollectionId: 'primitives', resolvedType: 'COLOR',
+        valuesByMode: { value: { r: 0.78, g: 0.78, b: 0.78, a: 1 } } },
+      opacity25: { id: 'opacity25', name: 'felt/opacity/25', variableCollectionId: 'primitives', resolvedType: 'FLOAT',
+        valuesByMode: { value: 25 } },
+      hover: { id: 'hover', name: 'felt/color/fill/interactive/subtle/hover', variableCollectionId: 'semantic', resolvedType: 'COLOR',
+        valuesByMode: { light: { color: { type: 'VARIABLE_ALIAS', id: 'gray30' }, opacity: { type: 'VARIABLE_ALIAS', id: 'opacity25' } } } },
+      probe: { id: 'probe', name: 'probe/hover', variableCollectionId: 'probe', resolvedType: 'COLOR',
+        valuesByMode: { 'probe-light': { type: 'VARIABLE_ALIAS', id: 'hover' } } }
+    }
+  }).find(({ collectionName }) => collectionName === 'Opacity probe');
+
+  assert.deepEqual(file.tokens.probe.hover.$value, {
+    colorSpace: 'srgb', components: [0.78, 0.78, 0.78], alpha: 0.25, hex: '#C7C7C7'
+  });
+  assert.equal(file.tokens.probe.hover.$extensions['com.figma.aliasData'].targetVariableName,
+    'felt/color/fill/interactive/subtle/hover');
 });
 
 test('rejects ambiguous cross-collection modes rather than using a default value', () => {

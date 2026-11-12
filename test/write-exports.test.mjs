@@ -5,6 +5,37 @@ import os from 'node:os';
 import path from 'node:path';
 import { writeNativeExports } from '../src/write-exports.mjs';
 
+test('full exports tolerate a managed file that was already deleted', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'figma-export-test-'));
+  const root = path.join(directory, 'tokens');
+  const light = { collectionName: 'Colors', modeName: 'Light', tokens: { light: { $type: 'number', $value: 1 } } };
+  const dark = { collectionName: 'Colors', modeName: 'Dark', tokens: { dark: { $type: 'number', $value: 2 } } };
+  try {
+    await writeNativeExports([light, dark], root);
+    // Simulate a managed file removed outside the exporter; pruning must not fail.
+    await rm(path.join(root, 'Colors/Dark.tokens.json'));
+    await writeNativeExports([light], root);
+    assert.deepEqual(await readdir(path.join(root, 'Colors')), ['Light.tokens.json']);
+    assert.deepEqual(JSON.parse(await readFile(path.join(root, '.figma-variables-export.json'), 'utf8')).files,
+      [path.join('Colors', 'Light.tokens.json')]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('rejects output names that collide on case-insensitive filesystems', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'figma-export-test-'));
+  const root = path.join(directory, 'tokens');
+  const lower = { collectionName: 'colors', modeName: 'light', tokens: { a: { $type: 'number', $value: 1 } } };
+  const upper = { collectionName: 'Colors', modeName: 'Light', tokens: { a: { $type: 'number', $value: 2 } } };
+  try {
+    await assert.rejects(() => writeNativeExports([lower, upper], root),
+      /same output file: .*colors.*light\.tokens\.json and .*Colors.*Light\.tokens\.json/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('full exports prune only managed files and partial exports keep other modes', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'figma-export-test-'));
   const root = path.join(directory, 'tokens');

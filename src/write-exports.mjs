@@ -10,9 +10,18 @@ function safeName(value) {
 export async function writeNativeExports(files, outputDirectory, { partial = false } = {}) {
   const root = path.resolve(outputDirectory);
   const destinations = new Map();
+  const destinationKeys = new Map();
   for (const file of files) {
     const relative = path.join(safeName(file.collectionName), `${safeName(file.modeName)}.tokens.json`);
-    if (destinations.has(relative)) throw new Error(`Multiple modes map to the same output file: ${relative}`);
+    // Compare case- and Unicode-normalized paths so names that differ only by
+    // case or normalization cannot silently overwrite each other on
+    // case-insensitive filesystems (macOS, Windows).
+    const key = relative.normalize('NFC').toLowerCase();
+    const existing = destinationKeys.get(key);
+    if (existing !== undefined) {
+      throw new Error(`Multiple modes map to the same output file: ${existing} and ${relative}`);
+    }
+    destinationKeys.set(key, relative);
     destinations.set(relative, JSON.stringify(file.tokens, null, 2));
   }
 
@@ -33,13 +42,15 @@ export async function writeNativeExports(files, outputDirectory, { partial = fal
 
     const obsolete = partial ? [] : previous.filter((entry) => !destinations.has(entry));
     const current = partial ? [...new Set([...previous, ...destinations.keys()])] : [...destinations.keys()];
-    const changes = [...new Set([...destinations.keys(), ...obsolete, MANIFEST])];
+    // Remove obsolete files before writing new ones so a case-only rename cannot
+    // delete a file that was just written on a case-insensitive filesystem.
+    const changes = [...new Set([...obsolete, ...destinations.keys(), MANIFEST])];
     for (const [relative, contents] of destinations) {
       const staged = path.join(staging, 'new', relative);
       await mkdir(path.dirname(staged), { recursive: true });
       await writeFile(staged, contents, 'utf8');
     }
-    await writeFile(path.join(staging, MANIFEST), JSON.stringify({ files: current }, null, 2) + '\n', 'utf8');
+    await writeFile(path.join(staging, MANIFEST), JSON.stringify({ files: [...current].sort() }, null, 2) + '\n', 'utf8');
 
     const existing = new Set();
     for (const relative of changes) {
@@ -64,7 +75,7 @@ export async function writeNativeExports(files, outputDirectory, { partial = fal
           await mkdir(path.dirname(destination), { recursive: true });
           await rename(path.join(staging, relative === MANIFEST ? MANIFEST : path.join('new', relative)), destination);
         } else {
-          await rm(destination);
+          await rm(destination, { force: true });
         }
         changed.push(relative);
       }

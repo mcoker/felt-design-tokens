@@ -241,7 +241,7 @@ Full exports update generated files and remove obsolete files tracked by `.figma
 
 ## JSON format
 
-- Variable names separated by `/` become nested token groups. Tokens use `$type` and `$value`, with descriptions and Figma metadata where available.
+- Variable names separated by `/` become nested token groups. Tokens use `$type` and `$value`, with descriptions and Figma metadata where available. Group and token names are sorted alphabetically so repeated exports produce stable diffs.
 - Aliases to other exported tokens in the same collection remain token references; other aliases resolve to values.
 - Length-scoped numbers export as `dimension` values in pixels. Other numbers, including opacity, font weight, z-index, and proportional line height, remain unitless.
 - `felt/duration/*` and `felt/motion/duration/*` values are treated as seconds and exported as `duration` values in milliseconds. Ensure the source values use seconds.
@@ -253,5 +253,5 @@ Invalid or duplicate token paths, missing values, unresolved aliases, and circul
 ## Tests
 
 ```sh
-node --test test/*.test.mjs
+npm test
 ```

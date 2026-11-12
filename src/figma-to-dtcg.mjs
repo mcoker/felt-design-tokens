@@ -128,7 +128,7 @@ export function figmaVariablesToNativeExports(response, { mode } = {}) {
         collectionName: collection.name,
         modeName: selectedMode.name,
         fileName: `${collection.name}/${selectedMode.name}.tokens.json`,
-        tokens: tokenTree
+        tokens: sortTokenTree(tokenTree)
       });
     }
   }
@@ -259,9 +259,16 @@ function resolveAliasValue(variableId, context, resolution, seen = new Set()) {
   const { value } = modeValue(target, targetContext, resolution.collections);
   if (isVariableAlias(value)) return resolveAliasValue(value.id, targetContext, resolution, seen);
   if (isComposedColor(value)) {
-    return isVariableAlias(value.color)
-      ? resolveAliasValue(value.color.id, targetContext, resolution, seen)
-      : value.color;
+    // A plain alias inherits the whole composed color, including its opacity.
+    let color = value.color;
+    if (isVariableAlias(color)) color = resolveAliasValue(color.id, targetContext, resolution, new Set(seen));
+    let opacity = value.opacity;
+    if (isVariableAlias(opacity)) opacity = resolveAliasValue(opacity.id, targetContext, resolution, new Set(seen));
+    if (!color || typeof color !== 'object' || !['r', 'g', 'b'].every((channel) => typeof color[channel] === 'number')
+      || typeof opacity !== 'number') {
+      throw new Error(`Cannot resolve composed color "${variableId}".`);
+    }
+    return { ...color, a: Math.fround(opacity / 100) };
   }
   return value;
 }
@@ -383,6 +390,19 @@ function validateNativeReferences(root, referenceTokens, collectionName, modeNam
     checked.add(path);
   }
   for (const path of tokens.keys()) visit(path);
+}
+
+function sortTokenTree(node) {
+  const sorted = {};
+  const properties = [];
+  const children = [];
+  for (const key of Object.keys(node)) (key.startsWith('$') ? properties : children).push(key);
+  children.sort();
+  for (const key of children) sorted[key] = sortTokenTree(node[key]);
+  for (const key of properties) {
+    sorted[key] = key === '$root' ? sortTokenTree(node[key]) : node[key];
+  }
+  return sorted;
 }
 
 function resolvedType(variable) {

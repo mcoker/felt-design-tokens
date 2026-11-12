@@ -28,7 +28,11 @@ function parseArgs(values) {
   for (let index = 0; index < values.length; index += 1) {
     const value = values[index];
     if (value === '--help' || value === '-h') {
-      process.stdout.write('Usage: figma-variables-to-dtcg --output DIR [--file FILE_KEY] [--token TOKEN] [--mode MODE]\n');
+      process.stdout.write(
+        'Usage: figma-variables-to-dtcg --output DIR [--file FILE_KEY] [--token TOKEN] [--token-type personal|oauth] [--mode MODE]\n'
+        + '\n'
+        + 'Environment variables: FIGMA_FILE_KEY, FIGMA_TOKEN, FIGMA_TOKEN_TYPE\n'
+      );
       process.exit(0);
     }
     if (!value.startsWith('--')) throw new Error(`Unknown argument: ${value}`);

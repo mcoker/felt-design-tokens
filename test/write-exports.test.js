@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { writeNativeExports } from '../src/write-exports.mjs';
+import { writeNativeExports } from '../figma-api/write-exports.js';
 
 test('full exports tolerate a managed file that was already deleted', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'figma-export-test-'));

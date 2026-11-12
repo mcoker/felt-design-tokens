@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
-import { fetchFigmaVariables, figmaVariablesToNativeExports } from '../src/figma-to-dtcg.mjs';
+import { fetchFigmaVariables, figmaVariablesToNativeExports } from '../figma-api/figma-to-dtcg.js';
 
 test('writes native-style DTCG files per local collection mode', () => {
   const files = figmaVariablesToNativeExports({

@@ -1,16 +1,29 @@
 import { copyFile, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import type { NativeTokenExport } from './figma-to-dtcg.js';
 
 const MANIFEST = '.figma-variables-export.json';
 
-function safeName(value) {
+type Manifest = { files: string[] };
+
+type WriteOptions = { partial?: boolean };
+
+function safeName(value: string): string {
   return value.replace(/[\\/]/g, '-').replace(/^\.+$/, '_');
 }
 
-export async function writeNativeExports(files, outputDirectory, { partial = false } = {}) {
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error;
+}
+
+export async function writeNativeExports(
+  files: NativeTokenExport[],
+  outputDirectory: string,
+  { partial = false }: WriteOptions = {}
+): Promise<string> {
   const root = path.resolve(outputDirectory);
-  const destinations = new Map();
-  const destinationKeys = new Map();
+  const destinations = new Map<string, string>();
+  const destinationKeys = new Map<string, string>();
   for (const file of files) {
     const relative = path.join(safeName(file.collectionName), `${safeName(file.modeName)}.tokens.json`);
     // Compare case- and Unicode-normalized paths so names that differ only by
@@ -29,15 +42,16 @@ export async function writeNativeExports(files, outputDirectory, { partial = fal
   const staging = await mkdtemp(path.join(path.dirname(root), '.figma-export-'));
   const manifestPath = path.join(root, MANIFEST);
   try {
-    let previous = [];
+    let previous: string[] = [];
     try {
-      previous = JSON.parse(await readFile(manifestPath, 'utf8')).files;
+      const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Manifest;
+      previous = manifest.files;
       if (!Array.isArray(previous) || previous.some((entry) =>
         typeof entry !== 'string' || path.isAbsolute(entry) || entry.split(path.sep).some((part) => !part || part === '..')
         || !entry.endsWith('.tokens.json')
       )) throw new Error(`Invalid export manifest at ${manifestPath}`);
     } catch (error) {
-      if (error.code !== 'ENOENT') throw error;
+      if (!isNodeError(error) || error.code !== 'ENOENT') throw error;
     }
 
     const obsolete = partial ? [] : previous.filter((entry) => !destinations.has(entry));
@@ -52,7 +66,7 @@ export async function writeNativeExports(files, outputDirectory, { partial = fal
     }
     await writeFile(path.join(staging, MANIFEST), JSON.stringify({ files: [...current].sort() }, null, 2) + '\n', 'utf8');
 
-    const existing = new Set();
+    const existing = new Set<string>();
     for (const relative of changes) {
       const destination = path.join(root, relative);
       try {
@@ -62,11 +76,11 @@ export async function writeNativeExports(files, outputDirectory, { partial = fal
         await mkdir(path.dirname(backup), { recursive: true });
         await copyFile(destination, backup);
       } catch (error) {
-        if (error.code !== 'ENOENT') throw error;
+        if (!isNodeError(error) || error.code !== 'ENOENT') throw error;
       }
     }
 
-    const changed = [];
+    const changed: string[] = [];
     try {
       await mkdir(root, { recursive: true });
       for (const relative of changes) {

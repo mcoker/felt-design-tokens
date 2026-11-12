@@ -216,14 +216,18 @@ Set your Figma token and file key (the identifier in the Figma file URL), then r
 export FIGMA_TOKEN="your-figma-token"
 export FIGMA_FILE_KEY="your-file-key"
 
-node bin/figma-variables-to-dtcg.mjs --output "./tokens/figma"
+npm run export -- --output "./tokens/figma"
 ```
+
+`npm run export` compiles the TypeScript sources first, then runs `node bin/figma-variables-to-dtcg.js`. The compiled JavaScript is generated output and is not committed.
 
 The exporter writes one file per local collection and mode:
 
 ```text
 tokens/figma/<collection>/<mode>.tokens.json
 ```
+
+The exporter sources live in `figma-api/`: `figma-to-dtcg.ts` fetches and converts variables, `write-exports.ts` stages and prunes the output files. Both are TypeScript and compile to JavaScript next to the source (`npm run compile`); the compiled files are not committed.
 
 Remote library collections, the `Figma-only` collection, and variables with `figma-only` anywhere in their name are excluded.
 
@@ -255,3 +259,5 @@ Invalid or duplicate token paths, missing values, unresolved aliases, and circul
 ```sh
 npm test
 ```
+
+Tests run against the compiled JavaScript, so `npm test` compiles the TypeScript sources first.
